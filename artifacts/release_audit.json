@@ -1,0 +1,322 @@
+{
+  "benchmark": {
+    "command": "PYTHONPATH=src python3 benchmarks/run_benchmarks.py",
+    "raw_output": "artifacts/benchmark-output.txt",
+    "regression_status": {
+      "assignment": true,
+      "effect_recovery": true,
+      "local_assignment_performance": true,
+      "statistical_calibration": true
+    },
+    "results": "benchmarks/results.json",
+    "successful": true
+  },
+  "claims": {
+    "VG-1": {
+      "limitations": "Approved for the local implementation and its tested semantics; it is not evidence of production adoption, distributed durability, uptime, or business impact.",
+      "observed": {
+        "assignment_gate": true,
+        "required_tests_present": [
+          "test_canonical_ids_ignore_mapping_insertion_order",
+          "test_exact_and_concurrent_duplicates_never_double_count",
+          "test_file_round_trip_replays_identical_order_ids_and_assignment_inputs",
+          "test_integrity_failures_withhold_effects_and_block_decisions",
+          "test_launched_version_is_immutable_even_through_direct_sql",
+          "test_missing_exposure_and_pre_exposure_goal_are_excluded",
+          "test_repeat_assignment_is_fully_sticky",
+          "test_typed_conditional_variables_and_rejection_reasons_are_explicit"
+        ]
+      },
+      "status": "approved",
+      "wording": "Typed multivariate variants, constraint-aware states, deterministic versioned assignment, and idempotent exposure logging produce trustworthy local readouts."
+    },
+    "VG-2": {
+      "limitations": "The exact 1.46 microsecond historical latency did not reproduce. This is an in-process Python microbenchmark, not service latency.",
+      "observed": {
+        "50_50_allocation_drift_percentage_points": 0.0402,
+        "maximum_drift_across_policies_percentage_points": 0.0402,
+        "median_trial_sampled_p95_microseconds": 1.417,
+        "stickiness_percent": 100.0,
+        "trial_range_microseconds": [
+          1.416,
+          1.958
+        ]
+      },
+      "status": "blocked",
+      "wording": "Preserved 100% repeat-user stickiness across 1M simulated assignments with 0.06 percentage-point allocation drift and 1.46 microsecond sampled p95 local assignment latency."
+    },
+    "VG-2R": {
+      "limitations": "Fresh replacement wording for this machine and run; local in-process performance is hardware- and load-sensitive.",
+      "observed": {
+        "assignments_per_policy": 1000000,
+        "maximum_drift_percentage_points": 0.0402,
+        "median_trial_sampled_p95_microseconds": 1.417,
+        "policies": [
+          "50_50",
+          "80_20",
+          "90_10"
+        ],
+        "trial_count": 5
+      },
+      "status": "approved",
+      "wording": "Preserved 100% repeat-user stickiness across three 1M-assignment policies with at most 0.0402 percentage-point drift and a 1.417 microsecond median sampled p95 local assignment latency across five trials."
+    },
+    "VG-3": {
+      "limitations": "Seeded simulations and local SQLite integrity tests do not establish live causal impact, Postgres behavior, or production reliability.",
+      "observed": {
+        "event_categories": {
+          "cross_version": {
+            "present": true,
+            "test": "test_versions_are_validated_and_never_cross_attribution"
+          },
+          "duplicate": {
+            "present": true,
+            "test": "test_exact_and_concurrent_duplicates_never_double_count"
+          },
+          "late": {
+            "present": true,
+            "test": "test_late_events_use_event_time_and_window_endpoint_is_inclusive"
+          },
+          "missing": {
+            "present": true,
+            "test": "test_missing_exposure_and_pre_exposure_goal_are_excluded"
+          },
+          "reordered": {
+            "present": true,
+            "test": "test_reordered_batches_reconcile_to_the_same_digest"
+          }
+        },
+        "expanded_baseline_matrix_pass": true,
+        "false_positive_rate_percent": 5.13,
+        "interval_coverage_percent": 94.87,
+        "simulations": 10000
+      },
+      "status": "approved",
+      "wording": "Calibrated a 5.13% false-positive rate and 94.87% interval coverage across 10K A/A simulations; passed five adversarial integrity categories spanning duplicate, missing, late, reordered, and cross-version events."
+    }
+  },
+  "generated_at": "2026-09-25T02:25:24.790886+00:00",
+  "limitations": [
+    "No customer adoption, revenue lift, uptime, or live causal impact is claimed.",
+    "Postgres is exercised locally, but sustained load, failover, multi-region behavior, and production authorization remain unproven.",
+    "The API, SDK queue, and dashboard are local demonstration components rather than a deployed production control plane.",
+    "Local latency is hardware- and load-sensitive and does not represent HTTP service latency."
+  ],
+  "methodology_version": "1.0",
+  "phase_readiness": {
+    "phase_0_baseline": "pass_with_historical_VG-2_wording_blocked",
+    "phase_1_trustworthy_backend": "pass_local_postgres_integration",
+    "phase_2_engineer_usability": "local_demo_pass",
+    "phase_3_harden_and_demonstrate": "partial_no_deployment_load_chaos_or_production_observability",
+    "phase_4_adaptive_allocation": "not_started_by_design",
+    "phase_5_large_space_optimization": "not_started_by_design"
+  },
+  "production_readiness": "not_proven",
+  "release_status": "local_demo_ready",
+  "reproduction_command": "PYTHONPATH=src python3 scripts/verify_release.py",
+  "source": {
+    "benchmark_generated_at": "2026-09-25T02:25:24.666998+00:00",
+    "benchmark_methodology_version": "3.0",
+    "git_revision": null,
+    "python": "3.14.6",
+    "source_fingerprint_sha256": "e39e1740218c01f0753a88040ab417e7f701ac3c4fd761d1945c00222b9b707f"
+  },
+  "tests": {
+    "command": "PYTHONPATH=src python3 -m unittest discover -s tests -v",
+    "names": [
+      "test_adjusted_sequential_look_does_not_raise_unadjusted_warning",
+      "test_all_event_types_have_strict_type_specific_schemas",
+      "test_analysis_plan_is_persistable_and_rejects_invalid_inputs",
+      "test_analytical_binary_power_agrees_with_seeded_simulation",
+      "test_api_rejects_events_for_unknown_versions",
+      "test_assignment_is_sticky",
+      "test_assignment_metadata_and_fallback_are_explicit",
+      "test_attribution_window_is_enforced",
+      "test_batch_retry_and_durable_reopen_recover_one_committed_result",
+      "test_binary_counts_must_be_logically_valid",
+      "test_binary_mde_and_required_sample_size_invert_power",
+      "test_binary_recovers_positive_zero_and_negative_effects",
+      "test_canonical_ids_ignore_mapping_insertion_order",
+      "test_checksum_detects_storage_tampering",
+      "test_client_schema_mismatch_is_rejected_and_falls_back_visibly",
+      "test_concurrent_duplicate_delivery_across_independent_connections",
+      "test_concurrent_duplicates_are_idempotent",
+      "test_conditional_variables_reject_forward_or_unknown_dependencies",
+      "test_constraints_remove_invalid_states",
+      "test_continuous_mde_matches_declared_power",
+      "test_continuous_readout_and_mde",
+      "test_continuous_recovers_positive_zero_and_negative_effects",
+      "test_continuous_values_must_be_finite",
+      "test_contract_batch_quarantine_and_dead_letter_lifecycle_are_durable",
+      "test_contract_batch_result_is_recoverable_and_batch_identity_is_immutable",
+      "test_contract_event_and_receipt_order_are_independently_queryable",
+      "test_contract_identical_insert_is_idempotent_and_collision_is_visible",
+      "test_dead_letter_can_be_replayed_after_version_catalog_changes",
+      "test_dead_letter_replay_survives_repository_reopen",
+      "test_decision_preserves_full_immutable_evidence_snapshot",
+      "test_duplicate_events_are_idempotent",
+      "test_effect_recovery_reports_bias_and_rmse_for_signed_truth",
+      "test_empty_valid_state_space_blocks_launch",
+      "test_event_and_receipt_timestamps_are_both_retained",
+      "test_event_id_reuse_for_different_payload_is_quarantined",
+      "test_exact_and_concurrent_duplicates_never_double_count",
+      "test_expired_cache_is_visible_when_service_fails",
+      "test_file_round_trip_replays_identical_order_ids_and_assignment_inputs",
+      "test_file_store_reopens_with_identical_reconciliation",
+      "test_frozen_fixtures_match_engine_service_and_local_sdk",
+      "test_get_records_only_one_exposure_per_context",
+      "test_goal_before_exposure_is_still_attributed",
+      "test_goal_received_before_exposure_reconciles_by_event_time",
+      "test_guardrail_direction_threshold_and_decision_suppression",
+      "test_health_is_rendered_before_effect_and_every_chart_is_labeled",
+      "test_heavy_tailed_continuous_outcomes_warn_and_block_normal_decision",
+      "test_ineligibility_and_unknown_rules_fail_closed_with_immutable_defaults",
+      "test_integrity_failure_suppresses_recommendation",
+      "test_integrity_failures_withhold_effects_and_block_decisions",
+      "test_invalid_batch_members_are_quarantined_without_losing_valid_members",
+      "test_invalid_lifecycle_transitions_fail_visibly",
+      "test_invalid_registry_transition_is_rejected",
+      "test_late_event_uses_experiment_time_not_receipt_order",
+      "test_late_events_use_event_time_and_window_endpoint_is_inclusive",
+      "test_launch_requires_explicit_review_and_freezes_configuration",
+      "test_launched_version_is_immutable_even_through_direct_sql",
+      "test_lifecycle_controls_preserve_history_and_rollback",
+      "test_malformed_and_unauthorized_payloads_fail_visibly",
+      "test_material_edit_clones_to_new_draft_and_preserves_source",
+      "test_metadata_explains_the_selected_weight_interval",
+      "test_method_metadata_is_canonical_and_round_trips",
+      "test_metrics_guardrails_and_immutable_decisions_are_persistent",
+      "test_missing_exposure_and_pre_exposure_goal_are_excluded",
+      "test_missing_exposure_is_not_attributed",
+      "test_observations_and_guardrails_are_exposure_gated",
+      "test_one_and_many_state_experiments_are_supported",
+      "test_outage_returns_visible_safe_default",
+      "test_outcome_before_exposure_time_is_not_attributed",
+      "test_pause_stop_and_kill_are_explicit_irreversible_transitions",
+      "test_policy_versions_are_assignment_isolated",
+      "test_preview_preserves_valid_and_rejected_states_with_reason",
+      "test_rare_and_common_binary_outcomes_have_finite_uncertainty",
+      "test_readouts_do_not_cross_versions",
+      "test_registry_replays_and_freezes_launched_versions",
+      "test_reordered_batches_reconcile_to_the_same_digest",
+      "test_repeat_assignment_is_fully_sticky",
+      "test_repeated_unadjusted_peeking_warns_and_suppresses_recommendation",
+      "test_required_decision_inputs_block_launch",
+      "test_retry_after_lost_ack_does_not_double_count",
+      "test_retry_after_timeout_recovers_the_committed_batch_result",
+      "test_segment_multiplicity_is_visible",
+      "test_service_and_local_evaluator_have_complete_assignment_parity",
+      "test_simultaneous_experiments_do_not_contaminate_each_other",
+      "test_srm_injection_suppresses_recommendation",
+      "test_state_identity_is_independent_of_mapping_order",
+      "test_timeouts_are_bounded_for_assignment_and_tracking",
+      "test_typed_conditional_variables_and_rejection_reasons_are_explicit",
+      "test_typed_factors_reject_mismatched_values",
+      "test_unknown_assignment_implementations_fail_before_exposure",
+      "test_unknown_sequential_adjustment_cannot_bypass_peeking_gate",
+      "test_v1_database_upgrades_rolls_back_and_reapplies_without_losing_json",
+      "test_version_salt_policy_and_experiment_namespaces_are_isolated",
+      "test_versions_are_isolated",
+      "test_versions_are_validated_and_never_cross_attribution"
+    ],
+    "postgres_integration_requested": true,
+    "postgres_integration_verified": true,
+    "postgres_required_tests": [
+      "test_batch_retry_and_durable_reopen_recover_one_committed_result",
+      "test_concurrent_duplicate_delivery_across_independent_connections",
+      "test_contract_batch_quarantine_and_dead_letter_lifecycle_are_durable",
+      "test_contract_batch_result_is_recoverable_and_batch_identity_is_immutable",
+      "test_contract_event_and_receipt_order_are_independently_queryable",
+      "test_contract_identical_insert_is_idempotent_and_collision_is_visible",
+      "test_dead_letter_replay_survives_repository_reopen"
+    ],
+    "raw_output": "artifacts/test-results.txt",
+    "return_code": 0,
+    "run": 98,
+    "successful": true
+  },
+  "workstreams": {
+    "A_registry": {
+      "local_acceptance": "pass",
+      "missing_tests": [],
+      "required_tests": [
+        "test_file_round_trip_replays_identical_order_ids_and_assignment_inputs",
+        "test_invalid_lifecycle_transitions_fail_visibly",
+        "test_launched_version_is_immutable_even_through_direct_sql",
+        "test_material_edit_clones_to_new_draft_and_preserves_source",
+        "test_typed_conditional_variables_and_rejection_reasons_are_explicit",
+        "test_v1_database_upgrades_rolls_back_and_reapplies_without_losing_json"
+      ]
+    },
+    "B_assignment": {
+      "local_acceptance": "pass",
+      "missing_tests": [],
+      "required_tests": [
+        "test_frozen_fixtures_match_engine_service_and_local_sdk",
+        "test_ineligibility_and_unknown_rules_fail_closed_with_immutable_defaults",
+        "test_repeat_assignment_is_fully_sticky",
+        "test_version_salt_policy_and_experiment_namespaces_are_isolated"
+      ]
+    },
+    "C_ingestion": {
+      "local_acceptance": "pass",
+      "missing_tests": [],
+      "plan_acceptance": "pass",
+      "postgres_integration_verified": true,
+      "production_gap": "A real Postgres adapter passes transactional and 16-connection contention tests; sustained load, failover, multi-region behavior, and production authorization remain unproven.",
+      "required_tests": [
+        "test_contract_identical_insert_is_idempotent_and_collision_is_visible",
+        "test_dead_letter_can_be_replayed_after_version_catalog_changes",
+        "test_exact_and_concurrent_duplicates_never_double_count",
+        "test_late_events_use_event_time_and_window_endpoint_is_inclusive",
+        "test_missing_exposure_and_pre_exposure_goal_are_excluded",
+        "test_reordered_batches_reconcile_to_the_same_digest",
+        "test_retry_after_timeout_recovers_the_committed_batch_result",
+        "test_versions_are_validated_and_never_cross_attribution"
+      ]
+    },
+    "D_inference": {
+      "local_acceptance": "pass",
+      "missing_tests": [],
+      "required_tests": [
+        "test_analytical_binary_power_agrees_with_seeded_simulation",
+        "test_binary_recovers_positive_zero_and_negative_effects",
+        "test_continuous_recovers_positive_zero_and_negative_effects",
+        "test_guardrail_direction_threshold_and_decision_suppression",
+        "test_repeated_unadjusted_peeking_warns_and_suppresses_recommendation",
+        "test_srm_injection_suppresses_recommendation"
+      ]
+    },
+    "E_api_sdk": {
+      "local_acceptance": "pass",
+      "missing_tests": [],
+      "plan_acceptance": "local_demo_pass",
+      "production_gap": "The HTTP adapter and async queue are local/demo implementations without production authentication, durable queueing, or network SLO evidence.",
+      "required_tests": [
+        "test_get_records_only_one_exposure_per_context",
+        "test_outage_returns_visible_safe_default",
+        "test_retry_after_lost_ack_does_not_double_count",
+        "test_service_and_local_evaluator_have_complete_assignment_parity",
+        "test_timeouts_are_bounded_for_assignment_and_tracking"
+      ]
+    },
+    "F_dashboard": {
+      "local_acceptance": "pass",
+      "missing_tests": [],
+      "plan_acceptance": "local_demo_pass",
+      "production_gap": "The operator sandbox is process-local and uses explicit fixtures rather than a deployed authenticated control plane.",
+      "required_tests": [
+        "test_decision_preserves_full_immutable_evidence_snapshot",
+        "test_health_is_rendered_before_effect_and_every_chart_is_labeled",
+        "test_integrity_failures_withhold_effects_and_block_decisions",
+        "test_launch_requires_explicit_review_and_freezes_configuration",
+        "test_lifecycle_controls_preserve_history_and_rollback"
+      ]
+    },
+    "G_evidence": {
+      "local_acceptance": "pass",
+      "plan_acceptance": "local_demo_pass",
+      "production_gap": "No deployed service-level telemetry, load/chaos evidence, or production performance dashboard."
+    }
+  }
+}

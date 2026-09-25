@@ -1,0 +1,22 @@
+{
+  "claim_ids": ["VG-1"],
+  "command": "PYTHONPATH=src python3 -m unittest tests.test_registry -v && PYTHONPATH=src python3 -m unittest discover -s tests -v",
+  "timestamp_utc": "2026-09-25T02:05:00Z",
+  "runtime": "Python 3.14; SQLite standard library; local macOS workspace",
+  "seed_or_fixture": "tests.test_registry.complete_experiment; 1000 deterministic subject IDs",
+  "result_files": [
+    "tests/test_registry.py",
+    "docs/REGISTRY.md",
+    "artifacts/registry/2026-09-24/interface.md",
+    "artifacts/registry/2026-09-24/limitations.md"
+  ],
+  "thresholds": {
+    "owned_registry_tests": "10/10 pass",
+    "full_suite_at_capture": "86/86 pass",
+    "replay_assignment_mismatches": 0,
+    "launched_mutations_accepted": 0
+  },
+  "status": "pass",
+  "limitations": "Local SQLite persistence and tests do not prove distributed durability, authorization, production uptime, or multi-writer migration safety. VG-1 still requires assignment, ingestion, and evidence-release sign-off."
+}
+

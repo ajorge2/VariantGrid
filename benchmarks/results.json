@@ -1,0 +1,193 @@
+{
+  "aa_calibration": {
+    "10_percent_historical_fixture": {
+      "baseline_rate_percent": 10.0,
+      "confidence_interval_coverage_percent": 94.87,
+      "false_positive_rate_percent": 5.13,
+      "mean_estimated_effect_percentage_points": 0.00835,
+      "nominal_alpha_percent": 5.0,
+      "nominal_confidence_interval_coverage_percent": 95.0,
+      "seed": 20260924,
+      "simulations": 10000,
+      "subjects_per_variant_per_simulation": 1000,
+      "within_predeclared_bounds": true
+    },
+    "1_percent": {
+      "baseline_rate_percent": 1.0,
+      "confidence_interval_coverage_percent": 94.71,
+      "false_positive_rate_percent": 5.29,
+      "mean_estimated_effect_percentage_points": -0.00555,
+      "nominal_alpha_percent": 5.0,
+      "nominal_confidence_interval_coverage_percent": 95.0,
+      "seed": 2026092401,
+      "simulations": 10000,
+      "subjects_per_variant_per_simulation": 1000,
+      "within_predeclared_bounds": true
+    },
+    "50_percent": {
+      "baseline_rate_percent": 50.0,
+      "confidence_interval_coverage_percent": 95.36,
+      "false_positive_rate_percent": 4.64,
+      "mean_estimated_effect_percentage_points": 0.00163,
+      "nominal_alpha_percent": 5.0,
+      "nominal_confidence_interval_coverage_percent": 95.0,
+      "seed": 2026092450,
+      "simulations": 10000,
+      "subjects_per_variant_per_simulation": 1000,
+      "within_predeclared_bounds": true
+    }
+  },
+  "assignment_allocations": {
+    "50_50": {
+      "allocation_counts": {
+        "control": 499598,
+        "treatment": 500402
+      },
+      "assignments": 1000000,
+      "declared_weights": [
+        1,
+        1
+      ],
+      "maximum_allocation_drift_percentage_points": 0.0402,
+      "repeat_subjects_checked": 10000,
+      "stickiness_percent": 100.0,
+      "target_shares": {
+        "control": 0.5,
+        "treatment": 0.5
+      }
+    },
+    "80_20": {
+      "allocation_counts": {
+        "control": 800027,
+        "treatment": 199973
+      },
+      "assignments": 1000000,
+      "declared_weights": [
+        4,
+        1
+      ],
+      "maximum_allocation_drift_percentage_points": 0.0027,
+      "repeat_subjects_checked": 10000,
+      "stickiness_percent": 100.0,
+      "target_shares": {
+        "control": 0.8,
+        "treatment": 0.2
+      }
+    },
+    "90_10": {
+      "allocation_counts": {
+        "control": 899824,
+        "treatment": 100176
+      },
+      "assignments": 1000000,
+      "declared_weights": [
+        9,
+        1
+      ],
+      "maximum_allocation_drift_percentage_points": 0.0176,
+      "repeat_subjects_checked": 10000,
+      "stickiness_percent": 100.0,
+      "target_shares": {
+        "control": 0.9,
+        "treatment": 0.1
+      }
+    }
+  },
+  "assignment_performance": {
+    "maximum_trial_sampled_p95_microseconds": 1.958,
+    "median_throughput_assignments_per_second": 705834.0,
+    "median_trial_sampled_p95_microseconds": 1.417,
+    "minimum_trial_sampled_p95_microseconds": 1.416,
+    "trial_count": 5,
+    "trials": [
+      {
+        "assignments": 1000000,
+        "sample_every": 100,
+        "sampled_p50_microseconds": 1.333,
+        "sampled_p95_microseconds": 1.416,
+        "sampled_p99_microseconds": 1.5,
+        "samples": 10000,
+        "throughput_assignments_per_second": 710820.0
+      },
+      {
+        "assignments": 1000000,
+        "sample_every": 100,
+        "sampled_p50_microseconds": 1.375,
+        "sampled_p95_microseconds": 1.417,
+        "sampled_p99_microseconds": 1.542,
+        "samples": 10000,
+        "throughput_assignments_per_second": 705834.0
+      },
+      {
+        "assignments": 1000000,
+        "sample_every": 100,
+        "sampled_p50_microseconds": 1.375,
+        "sampled_p95_microseconds": 1.958,
+        "sampled_p99_microseconds": 2.792,
+        "samples": 10000,
+        "throughput_assignments_per_second": 462885.0
+      },
+      {
+        "assignments": 1000000,
+        "sample_every": 100,
+        "sampled_p50_microseconds": 1.375,
+        "sampled_p95_microseconds": 1.417,
+        "sampled_p99_microseconds": 1.5,
+        "samples": 10000,
+        "throughput_assignments_per_second": 706960.0
+      },
+      {
+        "assignments": 1000000,
+        "sample_every": 100,
+        "sampled_p50_microseconds": 1.375,
+        "sampled_p95_microseconds": 1.458,
+        "sampled_p99_microseconds": 1.541,
+        "samples": 10000,
+        "throughput_assignments_per_second": 700564.0
+      }
+    ]
+  },
+  "effect_recovery": {
+    "absolute_bias_percentage_points": 0.014167,
+    "injected_effect_percentage_points": 2.0,
+    "mean_recovered_effect_percentage_points": 2.014167,
+    "positive_detection_rate_percent": 70.0,
+    "seed": 24092026,
+    "simulations": 2000,
+    "subjects_per_variant_per_simulation": 3000
+  },
+  "environment": {
+    "cpu_model": "Apple M2",
+    "logical_cpu_count": 8,
+    "machine": "arm64",
+    "memory_bytes": 17179869184,
+    "processor": "arm",
+    "python": "3.14.6",
+    "python_implementation": "CPython",
+    "release": "25.5.0",
+    "system": "Darwin"
+  },
+  "generated_at": "2026-09-25T02:25:24.666998+00:00",
+  "methodology_version": "3.0",
+  "predeclared_thresholds": {
+    "confidence_interval_coverage_percent": [
+      94.0,
+      96.0
+    ],
+    "false_positive_rate_percent": [
+      4.5,
+      5.5
+    ],
+    "maximum_allocation_drift_percentage_points": 0.25,
+    "maximum_effect_recovery_absolute_bias_percentage_points": 0.25,
+    "maximum_median_sampled_p95_microseconds": 25.0,
+    "minimum_median_throughput_assignments_per_second": 50000,
+    "stickiness_percent": 100.0
+  },
+  "regression_status": {
+    "assignment": true,
+    "effect_recovery": true,
+    "local_assignment_performance": true,
+    "statistical_calibration": true
+  }
+}

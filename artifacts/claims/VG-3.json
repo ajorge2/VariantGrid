@@ -1,0 +1,78 @@
+{
+  "claim_id": "VG-3",
+  "environment": {
+    "cpu_model": "Apple M2",
+    "logical_cpu_count": 8,
+    "machine": "arm64",
+    "memory_bytes": 17179869184,
+    "processor": "arm",
+    "python": "3.14.6",
+    "python_implementation": "CPython",
+    "release": "25.5.0",
+    "system": "Darwin"
+  },
+  "fixture_or_seed": {
+    "seeds": [
+      2026092401,
+      20260924,
+      2026092450,
+      24092026
+    ]
+  },
+  "generated_artifacts": [
+    "benchmarks/results.json",
+    "artifacts/release_audit.json",
+    "artifacts/test-results.txt"
+  ],
+  "independent_signer": "evidence/release engineer",
+  "limitations": "Seeded simulations and local SQLite integrity tests do not establish live causal impact, Postgres behavior, or production reliability.",
+  "observed": {
+    "event_categories": {
+      "cross_version": {
+        "present": true,
+        "test": "test_versions_are_validated_and_never_cross_attribution"
+      },
+      "duplicate": {
+        "present": true,
+        "test": "test_exact_and_concurrent_duplicates_never_double_count"
+      },
+      "late": {
+        "present": true,
+        "test": "test_late_events_use_event_time_and_window_endpoint_is_inclusive"
+      },
+      "missing": {
+        "present": true,
+        "test": "test_missing_exposure_and_pre_exposure_goal_are_excluded"
+      },
+      "reordered": {
+        "present": true,
+        "test": "test_reordered_batches_reconcile_to_the_same_digest"
+      }
+    },
+    "expanded_baseline_matrix_pass": true,
+    "false_positive_rate_percent": 5.13,
+    "interval_coverage_percent": 94.87,
+    "simulations": 10000
+  },
+  "predeclared_thresholds": {
+    "confidence_interval_coverage_percent": [
+      94.0,
+      96.0
+    ],
+    "false_positive_rate_percent": [
+      4.5,
+      5.5
+    ],
+    "maximum_allocation_drift_percentage_points": 0.25,
+    "maximum_effect_recovery_absolute_bias_percentage_points": 0.25,
+    "maximum_median_sampled_p95_microseconds": 25.0,
+    "minimum_median_throughput_assignments_per_second": 50000,
+    "stickiness_percent": 100.0
+  },
+  "primary_owner": "inference integrity engineer with ingestion sign-off",
+  "reproduction_command": "PYTHONPATH=src python3 scripts/verify_release.py",
+  "source_fingerprint_sha256": "e39e1740218c01f0753a88040ab417e7f701ac3c4fd761d1945c00222b9b707f",
+  "source_revision": null,
+  "status": "approved",
+  "wording": "Calibrated a 5.13% false-positive rate and 94.87% interval coverage across 10K A/A simulations; passed five adversarial integrity categories spanning duplicate, missing, late, reordered, and cross-version events."
+}

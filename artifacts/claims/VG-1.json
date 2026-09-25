@@ -1,0 +1,56 @@
+{
+  "claim_id": "VG-1",
+  "environment": {
+    "cpu_model": "Apple M2",
+    "logical_cpu_count": 8,
+    "machine": "arm64",
+    "memory_bytes": 17179869184,
+    "processor": "arm",
+    "python": "3.14.6",
+    "python_implementation": "CPython",
+    "release": "25.5.0",
+    "system": "Darwin"
+  },
+  "fixture_or_seed": "unit/integration fixtures and assignment benchmark salt variantgrid-public-benchmark-v2",
+  "generated_artifacts": [
+    "benchmarks/results.json",
+    "artifacts/release_audit.json",
+    "artifacts/test-results.txt"
+  ],
+  "independent_signer": "evidence/release engineer",
+  "limitations": "Approved for the local implementation and its tested semantics; it is not evidence of production adoption, distributed durability, uptime, or business impact.",
+  "observed": {
+    "assignment_gate": true,
+    "required_tests_present": [
+      "test_canonical_ids_ignore_mapping_insertion_order",
+      "test_exact_and_concurrent_duplicates_never_double_count",
+      "test_file_round_trip_replays_identical_order_ids_and_assignment_inputs",
+      "test_integrity_failures_withhold_effects_and_block_decisions",
+      "test_launched_version_is_immutable_even_through_direct_sql",
+      "test_missing_exposure_and_pre_exposure_goal_are_excluded",
+      "test_repeat_assignment_is_fully_sticky",
+      "test_typed_conditional_variables_and_rejection_reasons_are_explicit"
+    ]
+  },
+  "predeclared_thresholds": {
+    "confidence_interval_coverage_percent": [
+      94.0,
+      96.0
+    ],
+    "false_positive_rate_percent": [
+      4.5,
+      5.5
+    ],
+    "maximum_allocation_drift_percentage_points": 0.25,
+    "maximum_effect_recovery_absolute_bias_percentage_points": 0.25,
+    "maximum_median_sampled_p95_microseconds": 25.0,
+    "minimum_median_throughput_assignments_per_second": 50000,
+    "stickiness_percent": 100.0
+  },
+  "primary_owner": "registry engineer with assignment and ingestion sign-off",
+  "reproduction_command": "PYTHONPATH=src python3 scripts/verify_release.py",
+  "source_fingerprint_sha256": "e39e1740218c01f0753a88040ab417e7f701ac3c4fd761d1945c00222b9b707f",
+  "source_revision": null,
+  "status": "approved",
+  "wording": "Typed multivariate variants, constraint-aware states, deterministic versioned assignment, and idempotent exposure logging produce trustworthy local readouts."
+}

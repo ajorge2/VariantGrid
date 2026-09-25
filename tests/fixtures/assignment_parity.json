@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "purpose": "Frozen sha256-v1 fixtures consumed by the assignment engine, service, and local SDK parity test.",
+  "experiments": [
+    {
+      "key": "checkout_copy",
+      "version": 1,
+      "salt": "fixture-salt",
+      "algorithm_version": "sha256-v1",
+      "policy_version": "fixed-weight-v1",
+      "states": [
+        {"key": "control", "values": {"headline": "control"}, "weight": 0.5},
+        {"key": "benefit", "values": {"headline": "benefit"}, "weight": 0.5}
+      ],
+      "cases": [
+        {"subject_id": "user-1", "state_key": "control", "state_id": "36ee1e31caf0946ed002", "assignment_probability": 0.5},
+        {"subject_id": "user-2", "state_key": "benefit", "state_id": "1efbbbe92430dc373ebc", "assignment_probability": 0.5},
+        {"subject_id": "user-42", "state_key": "benefit", "state_id": "1efbbbe92430dc373ebc", "assignment_probability": 0.5}
+      ]
+    },
+    {
+      "key": "checkout_copy",
+      "version": 2,
+      "salt": "fixture-salt",
+      "algorithm_version": "sha256-v1",
+      "policy_version": "fixed-weight-v1",
+      "states": [
+        {"key": "control", "values": {"headline": "control"}, "weight": 0.5},
+        {"key": "benefit", "values": {"headline": "benefit"}, "weight": 0.5}
+      ],
+      "cases": [
+        {"subject_id": "user-1", "state_key": "control", "state_id": "36ee1e31caf0946ed002", "assignment_probability": 0.5},
+        {"subject_id": "user-2", "state_key": "control", "state_id": "36ee1e31caf0946ed002", "assignment_probability": 0.5},
+        {"subject_id": "user-42", "state_key": "control", "state_id": "36ee1e31caf0946ed002", "assignment_probability": 0.5}
+      ]
+    },
+    {
+      "key": "pricing",
+      "version": 1,
+      "salt": "pricing-salt",
+      "algorithm_version": "sha256-v1",
+      "policy_version": "fixed-weight-v1",
+      "states": [
+        {"key": "control", "values": {"plan": "control"}, "weight": 0.8},
+        {"key": "annual", "values": {"plan": "annual"}, "weight": 0.2}
+      ],
+      "cases": [
+        {"subject_id": "user-1", "state_key": "control", "state_id": "c99fdc35c34fc589dbfa", "assignment_probability": 0.8},
+        {"subject_id": "user-42", "state_key": "control", "state_id": "c99fdc35c34fc589dbfa", "assignment_probability": 0.8}
+      ]
+    }
+  ]
+}

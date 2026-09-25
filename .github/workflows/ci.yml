@@ -1,0 +1,42 @@
+name: VariantGrid evidence gates
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  release-evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install PostgreSQL integration dependency
+        run: python3 -m pip install -e '.[postgres]'
+      - name: Reproduce tests, Postgres integration, benchmarks, and claim gates
+        env:
+          VARIANTGRID_RUN_POSTGRES_TESTS: "1"
+          VARIANTGRID_TEST_POSTGRES_DSN: postgresql://postgres:postgres@localhost:5432/postgres
+        run: PYTHONPATH=src python3 scripts/verify_release.py
+      - name: Preserve generated evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: variantgrid-release-evidence
+          path: |
+            artifacts/
+            benchmarks/results.json

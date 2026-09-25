@@ -1,0 +1,11 @@
+[project]
+name = "variantgrid"
+version = "0.1.0"
+description = "Trustworthy experimentation infrastructure for deterministic assignment and defensible readouts"
+requires-python = ">=3.10"
+
+[project.optional-dependencies]
+postgres = ["psycopg[binary]>=3.3,<4"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
