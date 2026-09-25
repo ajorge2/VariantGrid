@@ -737,7 +737,17 @@ class DashboardHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self) -> None:  # noqa: N802 - required by BaseHTTPRequestHandler
-        if urlparse(self.path).path != "/":
+        path = urlparse(self.path).path
+        if path == "/healthz":
+            payload = b'{"status":"ok"}'
+            self.send_response(HTTPStatus.OK)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(payload)))
+            self.send_header("Cache-Control", "no-store")
+            self.end_headers()
+            self.wfile.write(payload)
+            return
+        if path != "/":
             self.send_error(HTTPStatus.NOT_FOUND)
             return
         payload = render_dashboard(self.sandbox).encode("utf-8")
@@ -786,7 +796,7 @@ def serve(host: str = "127.0.0.1", port: int = 8766) -> None:
     handler = type("BoundDashboardHandler", (DashboardHandler,), {"sandbox": sandbox})
     server = ThreadingHTTPServer((host, port), handler)
     print(f"VariantGrid operator sandbox: http://{host}:{port}")
-    print("Press Ctrl-C to stop. Local demonstration only; do not expose to untrusted networks.")
+    print("Press Ctrl-C to stop. Demonstration only; do not connect production data.")
     try:
         server.serve_forever()
     except KeyboardInterrupt:

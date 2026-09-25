@@ -47,6 +47,17 @@ PYTHONPATH=src python3 -m variantgrid.dashboard --port 8766
 
 Open `http://127.0.0.1:8766`, then follow the [two-minute demo](docs/DEMO.md). The dashboard is a local sandbox, not a production control plane.
 
+## Deploy the portfolio demo on Northflank
+
+The repository includes a Heroku-compatible `Procfile`, Python buildpack detection via `requirements.txt`, and a pinned Python version. In Northflank:
+
+1. Create a combined service from this repository and choose **Buildpack**.
+2. Select **`heroku/builder:24`** as the buildpack stack and keep the build context at the repository root.
+3. Add a public **HTTP** port with internal port **`8080`**.
+4. Optionally configure an HTTP health check at **`/healthz`** on port **`8080`**.
+
+The web process binds to `0.0.0.0` and uses the platform's `PORT` variable when present, falling back to `8080`. This remains an ephemeral portfolio sandbox: state is kept in memory, resets when the container restarts, and is not an authenticated production control plane.
+
 ## Current evidence boundary
 
 Fresh local evidence supports the typed registry, deterministic assignment, local idempotent event semantics, calibrated simulations, guarded decisions, SDK/API contract, and operator workflow. The historical **1.46 microsecond** assignment-latency wording remains blocked unless a fresh repeated run reproduces it; use the generated `VG-2R` wording instead.
