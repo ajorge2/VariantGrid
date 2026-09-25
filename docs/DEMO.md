@@ -10,42 +10,38 @@ PYTHONPATH=src python3 -m variantgrid.dashboard --port 8766
 
 Open `http://127.0.0.1:8766`.
 
-## 0:00–0:30 — Turn a hypothesis into valid states
+## 0:00–0:30 — Prove deterministic assignment
 
-Point out the predeclared hypothesis, primary metric, guardrail, eligibility rule, allocation, and stopping rule. Preview the typed variables and constraint. The table preserves both valid states and the rejected `blank + guided tour` state with its rejection reason.
+In **Assignment Lab**, change the subject ID and select **Assign twice and compare versions**. Point out the identical repeated result, SHA-256 bucket and interval, experiment and policy versions, and the separate comparison-version namespace. A version can legitimately land in the same state; isolation means the version changed the deterministic hash namespace.
 
-What this proves locally: configuration is explicit, invalid combinations are inspectable, and canonical states are generated before launch.
+Then scan the generated 50/50, 80/20, and 90/10 rows: each contains one million assignments, 100% repeat-user stickiness, observed drift, and the five-trial local latency summary. These values are loaded from approved machine-readable artifacts; opening the page does not rerun the benchmark.
 
-## 0:30–0:55 — Freeze the experiment contract
+## 0:30–0:55 — Run the five integrity scenarios
 
-Try to launch without approving the review; launch is blocked. Confirm the review and launch version 1. The version freezes its configuration instead of allowing a live edit.
+In **Event Integrity Lab**, show that duplicate, missing-exposure, late, reordered, and cross-version fixtures all pass through the real local ingestion and reconciliation pipeline. Expand one observed result. Emphasize that assignment is not treated as exposure, retries do not double-count, event time controls late reconciliation, delivery order does not change the digest, and versions never cross-attribute.
 
-What this proves locally: required decision inputs and explicit review gate launch, and material changes require a new version.
+What this proves locally: the named adversarial semantics hold for deterministic in-memory SQLite fixtures. It does not prove distributed delivery, Postgres throughput, or availability.
 
-## 0:55–1:25 — Make a trustworthy readout visible
+## 0:55–1:15 — Trace every published number
 
-Show that **Data health** appears before **Effect and uncertainty**. The healthy fixture exposes version, denominator, unit, time range, absolute effect, interval, p-value, and recommendation.
+In **Validation Evidence**, connect the three resume bullets to approved VG-1, VG-2R, and VG-3 manifests. Expand provenance to show the reproduction command, source fingerprint, environment, artifacts, methodology, and limitations. Note that the historical VG-2 wording is blocked and therefore not displayed as evidence.
 
-Then inject **missing exposure**. The effect disappears and the decision action is blocked. Repeat quickly with SRM or a guardrail breach if time permits.
+## 1:15–1:40 — Configure and freeze the experiment contract
 
-What this proves locally: integrity failures are not decorative warnings; they suppress interpretation and action.
+In **Interactive operator workflow**, point out the hypothesis, primary metric, guardrail, eligibility, allocation, stopping rule, typed variables, rejected state, and power inputs. Try launching without approving the immutable review; it is blocked. Confirm the review and launch version 1.
 
-## 1:25–1:50 — Preserve the decision
+## 1:40–2:00 — Make failure behavior visible
 
-Clear the failure, record a decision, and inspect the decision log. The record contains an immutable snapshot of the configuration, health state, readout, and recommendation rather than a link to mutable current state.
+Show that **Data health** appears before **Effect and uncertainty**. Inject **missing exposure**: the effect disappears and the decision action is blocked. Clear it, record a decision, and show the immutable evidence snapshot. If time permits, clone the launched version to demonstrate change without rewriting history.
 
-Pause and resume, then clone version 1 and roll back to demonstrate history without mutation.
-
-## 1:50–2:00 — Show the proof, including the failure
-
-Open `artifacts/release_audit.json` or run:
+For clean-state reproduction outside the demo, run:
 
 ```bash
 PYTHONPATH=src python3 scripts/verify_release.py
 ```
 
-Show that the local release gate is generated from a clean-copy run, VG-1 and VG-3 are approved, the exact historical VG-2 latency wording is blocked, and replacement wording comes from the current benchmark rather than copied history.
+The release gate regenerates the manifests and confirms that replacement VG-2R wording comes from current evidence rather than copied history.
 
 ## Honest closing line
 
-“This demo proves deterministic local behavior, calibrated simulation, adversarial event semantics, and an auditable operator workflow. It does not claim deployed Postgres durability, production uptime, adoption, or business lift.”
+“This demo proves deterministic local assignment, calibrated seeded simulation, adversarial SQLite event semantics, and an auditable operator workflow. It does not claim distributed durability, production uptime, customer adoption, causal business impact, or revenue lift.”

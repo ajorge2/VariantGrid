@@ -1,19 +1,33 @@
 import json
 import unittest
 from dataclasses import replace
+from pathlib import Path
+from tempfile import TemporaryDirectory
 
 from variantgrid.dashboard import (
     ConstraintDefinition,
     DashboardLifecycle,
     OperatorSandbox,
     default_draft,
+    load_public_claims,
     preview_states,
     render_dashboard,
     validate_draft,
 )
+from evidence_fixtures import write_approved_evidence
 
 
 class DashboardWorkflowTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.directory = TemporaryDirectory()
+        self.project_root = write_approved_evidence(Path(self.directory.name))
+
+    def tearDown(self) -> None:
+        self.directory.cleanup()
+
+    def render(self, sandbox: OperatorSandbox) -> str:
+        return render_dashboard(sandbox, self.project_root)
+
     def test_preview_preserves_valid_and_rejected_states_with_reason(self) -> None:
         preview = preview_states(default_draft())
 
@@ -67,7 +81,7 @@ class DashboardWorkflowTests(unittest.TestCase):
     def test_health_is_rendered_before_effect_and_every_chart_is_labeled(self) -> None:
         sandbox = OperatorSandbox()
         sandbox.launch(review_confirmed=True)
-        page = render_dashboard(sandbox)
+        page = self.render(sandbox)
 
         self.assertLess(page.index('id="data-health"'), page.index('id="readout"'))
         self.assertIn("n=500", page)
@@ -75,6 +89,126 @@ class DashboardWorkflowTests(unittest.TestCase):
         self.assertIn("2026-09-01 to 2026-09-14 UTC", page)
         self.assertIn("version: 1", page)
         self.assertIn("95% CI", page)
+
+    def test_minimal_shell_progressively_discloses_dense_controls(self) -> None:
+        page = self.render(OperatorSandbox())
+
+        self.assertIn("Trust an experiment before acting on it.", page)
+        self.assertEqual(4, page.count("<section"))
+        self.assertIn('<details id="configuration" class="workflow-step" open>', page)
+        self.assertIn('<details id="state-preview" class="workflow-step">', page)
+        self.assertIn('<details id="data-health" class="workflow-step">', page)
+        self.assertIn("Advanced experiment definition", page)
+        self.assertNotIn("Open a claim only when you want its proof.", page)
+        self.assertNotIn("Move through the lifecycle one step at a time.", page)
+        self.assertNotIn("View proof", page)
+        self.assertNotIn("Configuration complete", page)
+        self.assertNotIn("Try a user ID", page)
+        self.assertNotIn("not launched · local demo", page)
+        self.assertNotIn("· approved", page.lower())
+
+    def test_viewport_layout_preserves_sticky_navigation_and_mobile_reflow(self) -> None:
+        page = self.render(OperatorSandbox())
+
+        self.assertIn('</header><div class="nav-shell"><nav class="section-nav"', page)
+        self.assertIn(".nav-shell{padding:0 24px;position:sticky;top:12px", page)
+        self.assertIn("section{background:var(--surface);", page)
+        self.assertIn("scroll-margin-top:78px", page)
+        self.assertIn("grid-template-columns:repeat(2,minmax(0,1fr))", page)
+        self.assertIn("overflow-wrap:anywhere", page)
+
+    def test_public_proof_surface_uses_only_approved_generated_claims(self) -> None:
+        claims = load_public_claims(self.project_root)
+        self.assertEqual(("VG-1", "VG-2R", "VG-3"), tuple(claim["claim_id"] for claim in claims))
+        self.assertTrue(all(claim["status"] == "approved" for claim in claims))
+
+        page = self.render(OperatorSandbox())
+
+        self.assertIn('id="assignment-lab"', page)
+        self.assertIn('id="event-integrity-lab"', page)
+        self.assertIn('id="validation-evidence"', page)
+        self.assertIn("System snapshot", page)
+        self.assertIn("System validation results", page)
+        self.assertIn("Experiment workflow", page)
+        self.assertIn("Assignment consistency", page)
+        self.assertIn("Inference and event integrity", page)
+        self.assertIn("3M simulated assignments", page)
+        self.assertIn("1.417 µs median sampled p95 across five local trials", page)
+        self.assertIn("VG-1.json", page)
+        self.assertIn("VG-2R.json", page)
+        self.assertIn("VG-3.json", page)
+        self.assertIn("href='#assignment-lab'", page)
+        self.assertIn("href='#event-integrity-lab'", page)
+        self.assertIn("1,000,000 assignments each", page)
+        self.assertIn("0.0402 pp max drift", page)
+        self.assertIn("5.13% false positives", page)
+        self.assertIn("94.87% interval coverage", page)
+        self.assertNotIn("0.06 percentage-point allocation drift", page)
+        self.assertNotIn("1.46 microsecond", page)
+        self.assertIn("PYTHONPATH=src python3 scripts/verify_release.py", page)
+        self.assertIn("CPU model not reported", page)
+        self.assertIn("do not establish production durability", page)
+        self.assertNotIn("Resume claim proof map", page)
+        self.assertNotIn(">Claims<", page)
+        self.assertNotIn(">Proof<", page)
+        self.assertNotIn("Built experimentation infrastructure", page)
+        self.assertNotIn("Engineered deterministic", page)
+        self.assertNotIn("Built a Monte Carlo", page)
+
+    def test_public_claims_fail_closed_when_release_provenance_disagrees(self) -> None:
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            claims_directory = root / "artifacts" / "claims"
+            claims_directory.mkdir(parents=True)
+            (root / "artifacts" / "release_manifest.json").write_text(
+                json.dumps(
+                    {
+                        "claims": {"VG-1": "approved", "VG-2R": "approved", "VG-3": "approved"},
+                        "source_fingerprint_sha256": "release-fingerprint",
+                    }
+                ),
+                encoding="utf-8",
+            )
+            for claim_id in ("VG-1", "VG-2R", "VG-3"):
+                (claims_directory / f"{claim_id}.json").write_text(
+                    json.dumps(
+                        {
+                            "claim_id": claim_id,
+                            "status": "approved",
+                            "source_fingerprint_sha256": "different-fingerprint",
+                        }
+                    ),
+                    encoding="utf-8",
+                )
+
+            claims = load_public_claims(root)
+
+        self.assertTrue(all(claim["status"] == "unavailable" for claim in claims))
+        self.assertTrue(all("do not agree" in claim["error"] for claim in claims))
+
+    def test_assignment_lab_proves_repeat_assignment_and_version_namespace(self) -> None:
+        sandbox = OperatorSandbox()
+        sandbox.assignment_subject = "auditable-subject-17"
+
+        page = self.render(sandbox)
+
+        self.assertIn("auditable-subject-17", page)
+        self.assertIn("PASS · repeat assignment identical", page)
+        self.assertIn("PASS · version namespace isolated", page)
+        self.assertIn("sha256-v1", page)
+        self.assertIn("fixed-weight-v1", page)
+        self.assertIn("landing in the same state is valid", page)
+
+    def test_event_integrity_lab_runs_all_protected_scenarios(self) -> None:
+        page = self.render(OperatorSandbox())
+
+        self.assertIn("5/5 passed", page)
+        for label in ("Duplicate", "Missing Exposure", "Late", "Reordered", "Cross Version"):
+            with self.subTest(label=label):
+                self.assertIn(f"<strong>{label}</strong>", page)
+        self.assertIn("Assignment does not count as exposure", page)
+        self.assertIn("cross-version contamination must produce zero conversions", page)
+        self.assertIn("not distributed delivery", page)
 
     def test_integrity_failures_withhold_effects_and_block_decisions(self) -> None:
         fixtures = (
@@ -92,7 +226,7 @@ class DashboardWorkflowTests(unittest.TestCase):
                 sandbox = OperatorSandbox()
                 sandbox.launch(review_confirmed=True)
                 sandbox.inject_failure(fixture)
-                page = render_dashboard(sandbox)
+                page = self.render(sandbox)
                 self.assertIn("Effect estimates withheld", page)
                 self.assertNotIn("Recommendation: <strong>", page)
                 with self.assertRaisesRegex(ValueError, "Decision blocked"):

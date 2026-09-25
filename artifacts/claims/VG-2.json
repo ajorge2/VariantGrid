@@ -1,12 +1,12 @@
 {
   "claim_id": "VG-2",
   "environment": {
-    "cpu_model": "Apple M2",
+    "cpu_model": null,
     "logical_cpu_count": 8,
     "machine": "arm64",
-    "memory_bytes": 17179869184,
+    "memory_bytes": null,
     "processor": "arm",
-    "python": "3.14.6",
+    "python": "3.13.2",
     "python_implementation": "CPython",
     "release": "25.5.0",
     "system": "Darwin"
@@ -22,11 +22,11 @@
   "observed": {
     "50_50_allocation_drift_percentage_points": 0.0402,
     "maximum_drift_across_policies_percentage_points": 0.0402,
-    "median_trial_sampled_p95_microseconds": 1.417,
+    "median_trial_sampled_p95_microseconds": 1.333,
     "stickiness_percent": 100.0,
     "trial_range_microseconds": [
-      1.416,
-      1.958
+      1.333,
+      1.334
     ]
   },
   "predeclared_thresholds": {
@@ -46,7 +46,7 @@
   },
   "primary_owner": "assignment engineer",
   "reproduction_command": "PYTHONPATH=src python3 scripts/verify_release.py",
-  "source_fingerprint_sha256": "e39e1740218c01f0753a88040ab417e7f701ac3c4fd761d1945c00222b9b707f",
+  "source_fingerprint_sha256": "acd2b889d6c0e000b638e18373e743e27834d7c367fc5c1837a4d90347577799",
   "source_revision": null,
   "status": "blocked",
   "wording": "Preserved 100% repeat-user stickiness across 1M simulated assignments with 0.06 percentage-point allocation drift and 1.46 microsecond sampled p95 local assignment latency."
