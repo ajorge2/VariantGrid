@@ -36,6 +36,12 @@ from .models import (
     generate_state_space,
     stable_state_id,
 )
+from .policy import (
+    GateEvaluation,
+    PreRegisteredDecision,
+    PreRegisteredGate,
+    evaluate_pre_registered_gates,
+)
 from .registry import ExperimentRegistry, Lifecycle, RegisteredVersion
 from .sdk import ExperimentContext, SDKConfig, VariantGridClient
 
@@ -57,9 +63,12 @@ __all__ = [
     "Guardrail",
     "GuardrailEvaluation",
     "GuardrailRule",
+    "GateEvaluation",
     "ExperimentRegistry",
     "Lifecycle",
     "MetricDefinition",
+    "PreRegisteredDecision",
+    "PreRegisteredGate",
     "Readout",
     "RegisteredVersion",
     "RejectedState",
@@ -81,6 +90,7 @@ __all__ = [
     "evaluate_binary_decision",
     "evaluate_continuous_decision",
     "evaluate_guardrail",
+    "evaluate_pre_registered_gates",
     "continuous_minimum_detectable_effect",
     "continuous_test_power",
     "generate_state_space",

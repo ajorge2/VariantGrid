@@ -1,0 +1,87 @@
+{
+  "experiment": {
+    "assignment_algorithm_version": "sha256-v1",
+    "attribution_window_hours": 1,
+    "configuration_schema_version": 2,
+    "eligibility_rule": "all",
+    "factors": [
+      {
+        "active_when": {},
+        "name": "calibration_mode",
+        "values": [
+          "self_serve",
+          "guided"
+        ],
+        "variable_type": "enum"
+      }
+    ],
+    "guardrails": [
+      {
+        "maximum_regression": 0.05,
+        "metric": "research_request_success"
+      }
+    ],
+    "hypothesis": "A guided evidence-review workflow increases ten-minute market-research completion without reducing successful research requests by more than five percentage points.",
+    "key": "demandmap_guided_calibration",
+    "metrics": [
+      {
+        "metric_type": "binary",
+        "name": "research_completed",
+        "role": "primary"
+      },
+      {
+        "metric_type": "binary",
+        "name": "research_request_success",
+        "role": "secondary"
+      },
+      {
+        "metric_type": "binary",
+        "name": "evidence_reviewed_before_research",
+        "role": "secondary"
+      },
+      {
+        "metric_type": "continuous",
+        "name": "time_to_research_seconds",
+        "role": "secondary"
+      },
+      {
+        "metric_type": "continuous",
+        "name": "selected_persona_count",
+        "role": "secondary"
+      }
+    ],
+    "minimum_sample_size": 59,
+    "policy_version": "fixed-weight-v1",
+    "primary_metric": "research_completed",
+    "rules": [],
+    "salt": "demandmap-guided-calibration-v1",
+    "states": [
+      {
+        "key": "calibration_mode=guided",
+        "values": {
+          "calibration_mode": "guided"
+        },
+        "weight": 1.0
+      },
+      {
+        "key": "calibration_mode=self_serve",
+        "values": {
+          "calibration_mode": "self_serve"
+        },
+        "weight": 1.0
+      }
+    ],
+    "statistical_method": "two-proportion-z-v1",
+    "stopping_rule": "fixed-horizon",
+    "version": 1
+  },
+  "lifecycle": "draft",
+  "planning": {
+    "absolute_effect": 0.25,
+    "alpha": 0.05,
+    "baseline_rate": 0.4,
+    "power": 0.8,
+    "required_per_variant": 59,
+    "required_total": 118
+  }
+}

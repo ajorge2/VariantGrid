@@ -6,7 +6,7 @@
     "machine": "arm64",
     "memory_bytes": null,
     "processor": "arm",
-    "python": "3.13.2",
+    "python": "3.14.7",
     "python_implementation": "CPython",
     "release": "25.5.0",
     "system": "Darwin"
@@ -22,11 +22,11 @@
   "observed": {
     "50_50_allocation_drift_percentage_points": 0.0402,
     "maximum_drift_across_policies_percentage_points": 0.0402,
-    "median_trial_sampled_p95_microseconds": 1.333,
+    "median_trial_sampled_p95_microseconds": 1.458,
     "stickiness_percent": 100.0,
     "trial_range_microseconds": [
-      1.333,
-      1.334
+      1.417,
+      1.625
     ]
   },
   "predeclared_thresholds": {
@@ -46,8 +46,8 @@
   },
   "primary_owner": "assignment engineer",
   "reproduction_command": "PYTHONPATH=src python3 scripts/verify_release.py",
-  "source_fingerprint_sha256": "acd2b889d6c0e000b638e18373e743e27834d7c367fc5c1837a4d90347577799",
+  "source_fingerprint_sha256": "789486cbfabb069087067d7b60826a5e85e97873284d56f150a484a74f90baa8",
   "source_revision": null,
-  "status": "blocked",
+  "status": "approved",
   "wording": "Preserved 100% repeat-user stickiness across 1M simulated assignments with 0.06 percentage-point allocation drift and 1.46 microsecond sampled p95 local assignment latency."
 }

@@ -130,6 +130,27 @@ class APISDKTests(unittest.TestCase):
         )
         close_if_supported(store)
 
+    def test_repeated_service_assignment_records_one_idempotent_assignment_event(self) -> None:
+        _, _, store, api = running_system()
+        request = APIRequest(
+            "POST",
+            "/v1/assign",
+            {
+                "experiment_key": "onboarding",
+                "experiment_version": 1,
+                "subject_id": "repeat-user",
+            },
+            {SDK_COMPATIBILITY_HEADER: API_SCHEMA_VERSION},
+        )
+
+        first = api.handle(request)
+        second = api.handle(request)
+
+        self.assertEqual(200, first.status)
+        self.assertEqual(first.body["assignment"], second.body["assignment"])
+        self.assertEqual(1, store.event_count("assignment"))
+        close_if_supported(store)
+
     def test_outage_returns_visible_safe_default(self) -> None:
         transport = AlwaysFailTransport()
         client = VariantGridClient(self.config(), transport)
@@ -181,7 +202,9 @@ class APISDKTests(unittest.TestCase):
         receipt = context.goal("activated", idempotency_key="stable-goal-id")
         self.assertTrue(receipt.queued)
         self.assertTrue(client.flush())
-        self.assertEqual(store.event_count(), 1)
+        self.assertEqual(store.event_count("assignment"), 1)
+        self.assertEqual(store.event_count("goal"), 1)
+        self.assertEqual(store.event_count(), 2)
         self.assertEqual(client.delivery_failures, ())
         close_if_supported(store)
 
@@ -193,7 +216,9 @@ class APISDKTests(unittest.TestCase):
         context.get("starter_type", default="template")
         context.get("starter_type", default="template")
         self.assertTrue(client.flush())
-        self.assertEqual(store.event_count(), 1)
+        self.assertEqual(store.event_count("assignment"), 1)
+        self.assertEqual(store.event_count("exposure"), 1)
+        self.assertEqual(store.event_count(), 2)
         close_if_supported(store)
 
     def test_client_schema_mismatch_is_rejected_and_falls_back_visibly(self) -> None:

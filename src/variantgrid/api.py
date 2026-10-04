@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
+from hashlib import sha256
 import json
 from threading import Lock
 from typing import Any, Callable, Iterable, Mapping
@@ -101,6 +102,21 @@ class VariantGridAPI:
             eligible=explicit_eligibility,
             fallback_values=defaults,
         )
+        if result.state is not None:
+            subject_digest = sha256(subject_id.encode("utf-8")).hexdigest()[:20]
+            self.event_store.ingest(
+                Event(
+                    event_id=(
+                        f"assignment:{experiment_key}:{experiment_version}:"
+                        f"{subject_digest}:{result.state_id}"
+                    ),
+                    experiment_key=experiment_key,
+                    experiment_version=experiment_version,
+                    subject_id=subject_id,
+                    event_type="assignment",
+                    variant_key=result.state.key,
+                )
+            )
         # SDK tracking is asynchronous. Remember versions validated on the
         # assignment thread so a SQLite-backed local registry is not reopened
         # from the delivery worker thread. Production registries may validate

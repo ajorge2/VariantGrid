@@ -12,11 +12,11 @@
   ],
   "claims": {
     "VG-1": "approved",
-    "VG-2": "blocked",
+    "VG-2": "approved",
     "VG-2R": "approved",
     "VG-3": "approved"
   },
-  "generated_at": "2026-09-25T17:54:47.650971+00:00",
+  "generated_at": "2026-10-04T01:08:54.335637+00:00",
   "release_status": "local_demo_ready",
-  "source_fingerprint_sha256": "acd2b889d6c0e000b638e18373e743e27834d7c367fc5c1837a4d90347577799"
+  "source_fingerprint_sha256": "789486cbfabb069087067d7b60826a5e85e97873284d56f150a484a74f90baa8"
 }

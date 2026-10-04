@@ -1,0 +1,271 @@
+{
+  "decision_record": {
+    "created_at": "2026-10-03T01:48:17.651293+00:00",
+    "decision": "no-ship",
+    "experiment_key": "codearchitect_threshold_evaluation",
+    "version": 1
+  },
+  "generated_at": "2026-10-03T01:48:17.659391+00:00",
+  "registry_file": {
+    "path": "/Users/ajorge/life/variantgrid/studies/codearchitect-threshold-evaluation/variantgrid.sqlite",
+    "sha256": "44d2ed795824c4916f58cc980a00e718cd26b8a9568db9a0e76743e7a0bb4441"
+  },
+  "reproduction_command": "PYTHONPATH=src python3 studies/codearchitect-threshold-evaluation/run_evaluation.py --replace",
+  "result": {
+    "candidate_0_62": {
+      "abstention": 0.7682119205298014,
+      "accepted": 35,
+      "concept_fit_precision": 0.8571428571428571,
+      "correct_or_partial": 30,
+      "coverage": 0.23178807947019867,
+      "strict_correct": 24,
+      "strict_precision": 0.6857142857142857,
+      "strict_precision_wilson_95": [
+        0.5202023638793081,
+        0.8144915532573418
+      ]
+    },
+    "candidate_minus_conservative_strict_precision": -0.09206349206349207,
+    "change": "lower semantic acceptance threshold from 0.72 to 0.62",
+    "conservative_0_72": {
+      "abstention": 0.880794701986755,
+      "accepted": 18,
+      "concept_fit_precision": 0.8888888888888888,
+      "correct_or_partial": 16,
+      "coverage": 0.11920529801324503,
+      "strict_correct": 14,
+      "strict_precision": 0.7777777777777778,
+      "strict_precision_wilson_95": [
+        0.5478541568378739,
+        0.9099907189139831
+      ]
+    },
+    "decision": "no-ship",
+    "eligible_for_decision": true,
+    "evidence_status": "complete",
+    "exact_token_baseline": {
+      "abstention": 0.9403973509933775,
+      "accepted": 9,
+      "concept_fit_precision": 0.7777777777777778,
+      "correct_or_partial": 7,
+      "coverage": 0.059602649006622516,
+      "strict_correct": 5,
+      "strict_precision": 0.5555555555555556,
+      "strict_precision_wilson_95": [
+        0.26665129349549305,
+        0.8112214789023355
+      ]
+    },
+    "failed_gates": [
+      "candidate_strict_precision_at_least_80_percent",
+      "precision_drop_no_more_than_5_points"
+    ],
+    "gate_evaluations": [
+      {
+        "comparison": "at_least",
+        "metric": "accepted_coverage",
+        "name": "candidate_coverage_at_least_20_percent",
+        "observed_value": 0.23178807947019867,
+        "passed": true,
+        "threshold": 0.2
+      },
+      {
+        "comparison": "at_least",
+        "metric": "strict_human_reviewed_precision",
+        "name": "candidate_strict_precision_at_least_80_percent",
+        "observed_value": 0.6857142857142857,
+        "passed": false,
+        "threshold": 0.8
+      },
+      {
+        "comparison": "at_least",
+        "metric": "candidate_minus_conservative_strict_precision",
+        "name": "precision_drop_no_more_than_5_points",
+        "observed_value": -0.09206349206349207,
+        "passed": false,
+        "threshold": -0.05
+      }
+    ]
+  },
+  "schema_version": "variantgrid-codearchitect-study/v1",
+  "source_evidence": {
+    "human_reviews": {
+      "path": "/Users/ajorge/life/codearchitect-decision-evidence/human-review.csv",
+      "sha256": "86604d19cdbcdf200e3e87986831ca4d7aefe4c68f5c710c7aad52c368fe3b57"
+    },
+    "manifest": {
+      "path": "/Users/ajorge/life/codearchitect-decision-evidence/manifest.json",
+      "sha256": "23cfaa33916045479998a0781993ac37137e25d102d9ba688c94abeb59c8454d"
+    },
+    "preregistration": {
+      "path": "/Users/ajorge/life/codearchitect-decision-evidence/preregistration.md",
+      "sha256": "4caa63d9a5bbb74f81d8cce4d80ee0c36989ffe60c9d1a589549bdfbb44155a9"
+    },
+    "review_key": {
+      "path": "/Users/ajorge/life/codearchitect-decision-evidence/review-key.jsonl",
+      "sha256": "278db6873904414b4851df1c16c1ceba766a509bb5cd74a85fa08638f50071e7"
+    }
+  },
+  "variantgrid_registry": {
+    "configuration_sha256": "3f6d233b058efc67cd4606aa33b9d3357e2b86dfde064b029442ecf6cd9a041a",
+    "decisions": [
+      {
+        "created_at": "2026-10-03T01:48:17.651293+00:00",
+        "decision": "no-ship",
+        "evidence": {
+          "limitations": [
+            "The 151 components are repository-disjoint from taxonomy fitting, but earlier model judgments informed development.",
+            "The human labels are new; this measures accepted-prediction quality, not downstream developer outcomes.",
+            "The two threshold policies were replayed on the same held-out components, not randomly assigned subjects."
+          ],
+          "result": {
+            "candidate_0_62": {
+              "abstention": 0.7682119205298014,
+              "accepted": 35,
+              "concept_fit_precision": 0.8571428571428571,
+              "correct_or_partial": 30,
+              "coverage": 0.23178807947019867,
+              "strict_correct": 24,
+              "strict_precision": 0.6857142857142857,
+              "strict_precision_wilson_95": [
+                0.5202023638793081,
+                0.8144915532573418
+              ]
+            },
+            "candidate_minus_conservative_strict_precision": -0.09206349206349207,
+            "change": "lower semantic acceptance threshold from 0.72 to 0.62",
+            "conservative_0_72": {
+              "abstention": 0.880794701986755,
+              "accepted": 18,
+              "concept_fit_precision": 0.8888888888888888,
+              "correct_or_partial": 16,
+              "coverage": 0.11920529801324503,
+              "strict_correct": 14,
+              "strict_precision": 0.7777777777777778,
+              "strict_precision_wilson_95": [
+                0.5478541568378739,
+                0.9099907189139831
+              ]
+            },
+            "decision": "no-ship",
+            "eligible_for_decision": true,
+            "evidence_status": "complete",
+            "exact_token_baseline": {
+              "abstention": 0.9403973509933775,
+              "accepted": 9,
+              "concept_fit_precision": 0.7777777777777778,
+              "correct_or_partial": 7,
+              "coverage": 0.059602649006622516,
+              "strict_correct": 5,
+              "strict_precision": 0.5555555555555556,
+              "strict_precision_wilson_95": [
+                0.26665129349549305,
+                0.8112214789023355
+              ]
+            },
+            "failed_gates": [
+              "candidate_strict_precision_at_least_80_percent",
+              "precision_drop_no_more_than_5_points"
+            ],
+            "gate_evaluations": [
+              {
+                "comparison": "at_least",
+                "metric": "accepted_coverage",
+                "name": "candidate_coverage_at_least_20_percent",
+                "observed_value": 0.23178807947019867,
+                "passed": true,
+                "threshold": 0.2
+              },
+              {
+                "comparison": "at_least",
+                "metric": "strict_human_reviewed_precision",
+                "name": "candidate_strict_precision_at_least_80_percent",
+                "observed_value": 0.6857142857142857,
+                "passed": false,
+                "threshold": 0.8
+              },
+              {
+                "comparison": "at_least",
+                "metric": "candidate_minus_conservative_strict_precision",
+                "name": "precision_drop_no_more_than_5_points",
+                "observed_value": -0.09206349206349207,
+                "passed": false,
+                "threshold": -0.05
+              }
+            ]
+          },
+          "schema_version": "variantgrid-offline-policy-decision/v1",
+          "source_evidence": {
+            "human_reviews": {
+              "path": "/Users/ajorge/life/codearchitect-decision-evidence/human-review.csv",
+              "sha256": "86604d19cdbcdf200e3e87986831ca4d7aefe4c68f5c710c7aad52c368fe3b57"
+            },
+            "manifest": {
+              "path": "/Users/ajorge/life/codearchitect-decision-evidence/manifest.json",
+              "sha256": "23cfaa33916045479998a0781993ac37137e25d102d9ba688c94abeb59c8454d"
+            },
+            "preregistration": {
+              "path": "/Users/ajorge/life/codearchitect-decision-evidence/preregistration.md",
+              "sha256": "4caa63d9a5bbb74f81d8cce4d80ee0c36989ffe60c9d1a589549bdfbb44155a9"
+            },
+            "review_key": {
+              "path": "/Users/ajorge/life/codearchitect-decision-evidence/review-key.jsonl",
+              "sha256": "278db6873904414b4851df1c16c1ceba766a509bb5cd74a85fa08638f50071e7"
+            }
+          },
+          "source_manifest": {
+            "baseline_accepts": 9,
+            "holdout_components": 151,
+            "review_items": 39,
+            "schema_version": "codearchitect-human-review/v1",
+            "seed": "codearchitect-human-review-v1",
+            "semantic_accepts": 35,
+            "source": "/Users/ajorge/code-viewer-demo/.data/intent-semantic-taxonomy-cli-v1/evaluated-holdout.jsonl",
+            "source_sha256": "7729673c943f71b108e61f948637b6b4f1ff11045108b8a02476111018c1c8ea",
+            "taxonomy": "/Users/ajorge/code-viewer-demo/.data/intent-semantic-taxonomy-cli-v1/accepted-taxonomy.json",
+            "taxonomy_sha256": "2d9cefd87fa4dd2ba72018187142b9ac0181b65ec87105a98546e5b381725f55",
+            "valid_labels": [
+              "correct",
+              "partial",
+              "incorrect",
+              "cannot_judge"
+            ]
+          },
+          "study_type": "paired offline model-policy evaluation"
+        }
+      }
+    ],
+    "experiment_key": "codearchitect_threshold_evaluation",
+    "guardrails": [
+      {
+        "maximum_regression": 0.05,
+        "metric": "strict_human_reviewed_precision"
+      }
+    ],
+    "lifecycle": "running",
+    "metrics": [
+      {
+        "metric_type": "binary",
+        "name": "abstention_rate",
+        "role": "secondary"
+      },
+      {
+        "metric_type": "binary",
+        "name": "accepted_coverage",
+        "role": "primary"
+      },
+      {
+        "metric_type": "binary",
+        "name": "correct_or_partial_precision",
+        "role": "secondary"
+      },
+      {
+        "metric_type": "binary",
+        "name": "strict_human_reviewed_precision",
+        "role": "secondary"
+      }
+    ],
+    "schema_version": 2,
+    "version": 1
+  }
+}

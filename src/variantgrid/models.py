@@ -60,22 +60,47 @@ class Factor:
 
 @dataclass(frozen=True)
 class Rule:
-    """If every key in ``when`` matches, every key in ``require`` must match."""
+    """Require values or exclude a factor combination from the state space.
+
+    ``match_order`` records whether the predicates are an unordered
+    combination or an ordered sequence in factor-declaration order. State
+    generation is deterministic, so an ordered rule is validated against the
+    stored factor order before any states are accepted.
+    """
 
     when: Mapping[str, Any]
-    require: Mapping[str, Any]
+    require: Mapping[str, Any] = field(default_factory=dict)
     reason: str = "constraint_not_satisfied"
+    effect: str = "require"
+    match_order: str = "any_order"
+    sequence: tuple[str, ...] = field(default_factory=tuple)
 
     def __post_init__(self) -> None:
-        if not self.require:
+        if self.effect not in {"require", "exclude"}:
+            raise ValueError("Rule effect must be require or exclude")
+        if self.match_order not in {"any_order", "in_order"}:
+            raise ValueError("Rule match_order must be any_order or in_order")
+        if self.effect == "require" and not self.require:
             raise ValueError("Rules require a non-empty require clause")
+        if self.effect == "exclude" and not self.when:
+            raise ValueError("Exclusion rules require at least one factor predicate")
+        sequence = tuple(self.sequence)
+        if self.match_order == "in_order":
+            sequence = sequence or tuple(self.when)
+            if len(sequence) != len(set(sequence)) or set(sequence) != set(self.when):
+                raise ValueError(
+                    "Ordered rule sequence must list every when-clause factor exactly once"
+                )
         if not self.reason.strip():
             raise ValueError("Rules require a rejection reason")
         object.__setattr__(self, "when", MappingProxyType(dict(self.when)))
         object.__setattr__(self, "require", MappingProxyType(dict(self.require)))
+        object.__setattr__(self, "sequence", sequence)
 
     def accepts(self, state: Mapping[str, Any]) -> bool:
         triggered = all(state.get(key) == value for key, value in self.when.items())
+        if self.effect == "exclude":
+            return not triggered
         return not triggered or all(state.get(key) == value for key, value in self.require.items())
 
 
@@ -143,10 +168,22 @@ def _validate_definition(factors: tuple[Factor, ...], rules: tuple[Rule, ...]) -
         declared[factor.name] = factor
 
     known = set(names)
+    factor_by_name = {factor.name: factor for factor in factors}
+    factor_order = {name: index for index, name in enumerate(names)}
     for rule in rules:
         unknown = (set(rule.when) | set(rule.require)) - known
         if unknown:
             raise ValueError(f"Rule references unknown factors: {sorted(unknown)}")
+        for name, value in (*rule.when.items(), *rule.require.items()):
+            if value not in factor_by_name[name].values:
+                raise ValueError(f"Rule references unavailable value {name}={value!r}")
+        if rule.match_order == "in_order":
+            positions = [factor_order[name] for name in rule.sequence]
+            if positions != sorted(positions):
+                raise ValueError(
+                    "Ordered rule contradicts factor declaration order: "
+                    + " -> ".join(rule.sequence)
+                )
 
 
 def generate_state_space(

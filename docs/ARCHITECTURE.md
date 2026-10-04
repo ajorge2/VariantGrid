@@ -8,7 +8,9 @@ flowchart LR
     R -->|immutable version| A[Assignment engine]
     SDK[Python SDK] -->|subject + version| A
     A -->|state, probability, diagnostics| SDK
-    SDK -->|actual exposure + outcomes| API[Versioned event API]
+    SDK -->|assignment request| API[Versioned assignment + event API]
+    API -->|idempotent assignment event| E
+    SDK -->|actual exposure + outcomes| API
     API --> E[(Event repository)]
     E -->|event-time reconciliation| X[Exposure-gated attribution]
     R -->|metric, guardrail, stopping plan| S[Analysis and integrity gates]
@@ -36,7 +38,11 @@ flowchart LR
 
 The direct assignment engine, local API adapter, and Python SDK share the same evaluator and frozen parity fixture. The event repository contract runs unchanged against SQLite and PostgreSQL. The Postgres adapter additionally proves transactional contention across 16 connections plus durable retry and dead-letter replay after reopen.
 
-The operator dashboard is a process-local sandbox. Its fixtures demonstrate workflow and failure visibility; they do not turn simulated health states into production telemetry.
+The operator dashboard is a process-local sandbox. SDK/API assignment,
+exposure, and outcome events feed real local event-derived plots and a
+reconciliation trace. Health-failure controls and the decision-effect panel are
+still explicit fixtures; the live local path does not establish production
+telemetry durability, authentication, or availability.
 
 ## Failure behavior
 

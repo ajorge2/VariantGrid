@@ -30,7 +30,15 @@ In **Validation Evidence**, connect the three resume bullets to approved VG-1, V
 
 In **Interactive operator workflow**, point out the hypothesis, primary metric, guardrail, eligibility, allocation, stopping rule, typed variables, rejected state, and power inputs. Try launching without approving the immutable review; it is blocked. Confirm the review and launch version 1.
 
-## 1:40–2:00 — Make failure behavior visible
+## 1:40–1:50 — Drive a live product path
+
+Expand **Results** and open **Instrumented product**. Load one user's experience,
+then complete the primary outcome. Return to Results: assignment, exposure, and
+goal totals, traffic bars, conversion bars, and the pseudonymous event trace
+update from the event repository. For a separate-process demonstration, run
+`PYTHONPATH=src python3 examples/send_live_traffic.py --subjects 20`.
+
+## 1:50–2:00 — Make failure behavior visible
 
 Show that **Data health** appears before **Effect and uncertainty**. Inject **missing exposure**: the effect disappears and the decision action is blocked. Clear it, record a decision, and show the immutable evidence snapshot. If time permits, clone the launched version to demonstrate change without rewriting history.
 
@@ -44,4 +52,4 @@ The release gate regenerates the manifests and confirms that replacement VG-2R w
 
 ## Honest closing line
 
-“This demo proves deterministic local assignment, calibrated seeded simulation, adversarial SQLite event semantics, and an auditable operator workflow. It does not claim distributed durability, production uptime, customer adoption, causal business impact, or revenue lift.”
+“This demo proves deterministic local assignment, an SDK-to-API-to-live-dashboard product path, calibrated seeded simulation, adversarial SQLite event semantics, and an auditable operator workflow. It does not claim distributed durability, production uptime, customer adoption, causal business impact, or revenue lift.”

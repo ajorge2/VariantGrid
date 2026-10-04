@@ -94,56 +94,56 @@
     }
   },
   "assignment_performance": {
-    "maximum_trial_sampled_p95_microseconds": 1.334,
-    "median_throughput_assignments_per_second": 761820.0,
-    "median_trial_sampled_p95_microseconds": 1.333,
-    "minimum_trial_sampled_p95_microseconds": 1.333,
+    "maximum_trial_sampled_p95_microseconds": 1.625,
+    "median_throughput_assignments_per_second": 712775.0,
+    "median_trial_sampled_p95_microseconds": 1.458,
+    "minimum_trial_sampled_p95_microseconds": 1.417,
     "trial_count": 5,
     "trials": [
       {
         "assignments": 1000000,
         "sample_every": 100,
-        "sampled_p50_microseconds": 1.25,
-        "sampled_p95_microseconds": 1.333,
-        "sampled_p99_microseconds": 1.416,
+        "sampled_p50_microseconds": 1.334,
+        "sampled_p95_microseconds": 1.417,
+        "sampled_p99_microseconds": 1.459,
         "samples": 10000,
-        "throughput_assignments_per_second": 762982.0
+        "throughput_assignments_per_second": 712775.0
       },
       {
         "assignments": 1000000,
         "sample_every": 100,
-        "sampled_p50_microseconds": 1.25,
-        "sampled_p95_microseconds": 1.333,
-        "sampled_p99_microseconds": 1.375,
+        "sampled_p50_microseconds": 1.375,
+        "sampled_p95_microseconds": 1.625,
+        "sampled_p99_microseconds": 2.166,
         "samples": 10000,
-        "throughput_assignments_per_second": 759961.0
+        "throughput_assignments_per_second": 669115.0
       },
       {
         "assignments": 1000000,
         "sample_every": 100,
-        "sampled_p50_microseconds": 1.25,
-        "sampled_p95_microseconds": 1.333,
-        "sampled_p99_microseconds": 1.375,
+        "sampled_p50_microseconds": 1.375,
+        "sampled_p95_microseconds": 1.458,
+        "sampled_p99_microseconds": 1.5,
         "samples": 10000,
-        "throughput_assignments_per_second": 763811.0
+        "throughput_assignments_per_second": 712365.0
       },
       {
         "assignments": 1000000,
         "sample_every": 100,
-        "sampled_p50_microseconds": 1.25,
-        "sampled_p95_microseconds": 1.334,
-        "sampled_p99_microseconds": 1.375,
+        "sampled_p50_microseconds": 1.375,
+        "sampled_p95_microseconds": 1.458,
+        "sampled_p99_microseconds": 1.5,
         "samples": 10000,
-        "throughput_assignments_per_second": 759182.0
+        "throughput_assignments_per_second": 714856.0
       },
       {
         "assignments": 1000000,
         "sample_every": 100,
-        "sampled_p50_microseconds": 1.25,
-        "sampled_p95_microseconds": 1.333,
-        "sampled_p99_microseconds": 1.375,
+        "sampled_p50_microseconds": 1.375,
+        "sampled_p95_microseconds": 1.458,
+        "sampled_p99_microseconds": 1.5,
         "samples": 10000,
-        "throughput_assignments_per_second": 761820.0
+        "throughput_assignments_per_second": 715581.0
       }
     ]
   },
@@ -162,12 +162,12 @@
     "machine": "arm64",
     "memory_bytes": null,
     "processor": "arm",
-    "python": "3.13.2",
+    "python": "3.14.7",
     "python_implementation": "CPython",
     "release": "25.5.0",
     "system": "Darwin"
   },
-  "generated_at": "2026-09-25T17:54:47.593582+00:00",
+  "generated_at": "2026-10-04T01:08:54.262367+00:00",
   "methodology_version": "3.0",
   "predeclared_thresholds": {
     "confidence_interval_coverage_percent": [

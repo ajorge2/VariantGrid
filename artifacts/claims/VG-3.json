@@ -6,7 +6,7 @@
     "machine": "arm64",
     "memory_bytes": null,
     "processor": "arm",
-    "python": "3.13.2",
+    "python": "3.14.7",
     "python_implementation": "CPython",
     "release": "25.5.0",
     "system": "Darwin"
@@ -71,7 +71,7 @@
   },
   "primary_owner": "inference integrity engineer with ingestion sign-off",
   "reproduction_command": "PYTHONPATH=src python3 scripts/verify_release.py",
-  "source_fingerprint_sha256": "acd2b889d6c0e000b638e18373e743e27834d7c367fc5c1837a4d90347577799",
+  "source_fingerprint_sha256": "789486cbfabb069087067d7b60826a5e85e97873284d56f150a484a74f90baa8",
   "source_revision": null,
   "status": "approved",
   "wording": "Calibrated a 5.13% false-positive rate and 94.87% interval coverage across 10K A/A simulations; passed five adversarial integrity categories spanning duplicate, missing, late, reordered, and cross-version events."

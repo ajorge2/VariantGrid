@@ -77,7 +77,14 @@ def _experiment_payload(experiment: Experiment) -> dict[str, Any]:
             for factor in experiment.factors
         ],
         "rules": [
-            {"when": dict(rule.when), "require": dict(rule.require), "reason": rule.reason}
+            {
+                "when": dict(rule.when),
+                "require": dict(rule.require),
+                "reason": rule.reason,
+                "effect": rule.effect,
+                "match_order": rule.match_order,
+                "sequence": list(rule.sequence),
+            }
             for rule in experiment.rules
         ],
         "states": [
@@ -126,7 +133,14 @@ def deserialize_experiment(payload: str) -> Experiment:
         for item in raw.get("factors", ())
     )
     rules = tuple(
-        Rule(item["when"], item["require"], item.get("reason", "constraint_not_satisfied"))
+        Rule(
+            item["when"],
+            item.get("require", {}),
+            item.get("reason", "constraint_not_satisfied"),
+            item.get("effect", "require"),
+            item.get("match_order", "any_order"),
+            tuple(item.get("sequence", ())),
+        )
         for item in raw.get("rules", ())
     )
     metrics = tuple(MetricDefinition(**item) for item in raw.get("metrics", ()))

@@ -38,6 +38,74 @@ class DashboardWorkflowTests(unittest.TestCase):
             preview.rejected[0].reasons,
         )
 
+    def test_rule_editor_excludes_combinations_and_blocks_contradictory_sequences(self) -> None:
+        exclusion = ConstraintDefinition(
+            when={"starter_type": "blank", "guided_tour": True},
+            require={},
+            reason="Blank then guided is not a valid product sequence.",
+            effect="exclude",
+            match_order="in_order",
+            sequence=("starter_type", "guided_tour"),
+        )
+        draft = replace(default_draft(), constraints=(exclusion,))
+        preview = preview_states(draft)
+
+        self.assertEqual(3, len(preview.valid))
+        self.assertEqual(1, len(preview.rejected))
+        self.assertEqual((), validate_draft(draft))
+        sandbox = OperatorSandbox(draft)
+        self.addCleanup(sandbox.event_store.close)
+        launched = sandbox.launch(review_confirmed=True)
+        frozen = json.loads(launched.configuration_json)
+        self.assertEqual("exclude", frozen["rules"][0]["effect"])
+        self.assertEqual("in_order", frozen["rules"][0]["match_order"])
+        self.assertEqual(["starter_type", "guided_tour"], frozen["rules"][0]["sequence"])
+        self.assertEqual(3, len(sandbox.live_readout()["states"]))
+
+        contradictory = replace(
+            draft,
+            constraints=(
+                ConstraintDefinition(
+                    when={"guided_tour": True, "starter_type": "blank"},
+                    require={},
+                    reason="The declared sequence runs backward.",
+                    effect="exclude",
+                    match_order="in_order",
+                    sequence=("guided_tour", "starter_type"),
+                ),
+            ),
+        )
+        self.assertTrue(
+            any("contradicts factor declaration order" in error for error in validate_draft(contradictory))
+        )
+        with self.assertRaisesRegex(ValueError, "contradicts factor declaration order"):
+            OperatorSandbox(contradictory).launch(review_confirmed=True)
+
+    def test_sdk_events_drive_live_dashboard_readout(self) -> None:
+        sandbox = OperatorSandbox()
+        self.addCleanup(sandbox.event_store.close)
+        sandbox.launch(review_confirmed=True)
+
+        viewed = sandbox.run_reference_product("live-user-17")
+        converted = sandbox.run_reference_product("live-user-17", convert=True)
+        readout = sandbox.live_readout()
+
+        self.assertEqual(viewed["state_key"], converted["state_key"])
+        self.assertEqual("live", readout["status"])
+        self.assertEqual(1, readout["event_totals"]["assignment"])
+        self.assertEqual(2, readout["event_totals"]["exposure"])
+        self.assertEqual(1, readout["event_totals"]["goal"])
+        assigned_state = next(
+            state for state in readout["states"] if state["state_key"] == viewed["state_key"]
+        )
+        self.assertEqual(1, assigned_state["assigned"])
+        self.assertEqual(1, assigned_state["exposed"])
+        self.assertEqual(1, assigned_state["converted"])
+        page = self.render(sandbox)
+        self.assertIn("Live SDK telemetry", page)
+        self.assertIn("window.setInterval(refresh, 2000)", page)
+        self.assertIn("Open instrumented product", page)
+
     def test_required_decision_inputs_block_launch(self) -> None:
         cases = (
             replace(default_draft(), hypothesis=""),

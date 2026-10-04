@@ -66,5 +66,6 @@ Thumbs.db
 # Temporary/generated scratch data. Public benchmark and claim artifacts are
 # intentionally retained because they substantiate the documented results.
 artifacts/tmp/
+artifacts/layout/
 tmp/
 .tmp/

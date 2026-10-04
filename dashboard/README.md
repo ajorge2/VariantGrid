@@ -28,13 +28,20 @@ Then open `http://127.0.0.1:8766`.
 4. In **Validation Evidence**, connect VG-1, VG-2R, and VG-3 to their generated
    artifacts, reproduction command, source fingerprint, environment, and
    limitations. The blocked historical VG-2 wording is not presented as proof.
-5. In the operator workflow, inspect the decision contract, constraint-rejected
-   state, and power inputs. Try launching without the review checkbox, then
-   confirm the review and launch immutable version 1.
-6. Confirm that Data health appears before Effect and uncertainty. Select
+5. In the operator workflow, inspect the decision contract, combination/sequence
+   rules, constraint-rejected state, and power inputs. The rule validator blocks
+   unknown factors and values, reversed declared sequences, duplicate rules, and
+   rule sets that eliminate every state. Try launching without the review
+   checkbox, then confirm the review and launch immutable version 1.
+6. Open **Instrumented product** in Results and load or complete an experience.
+   The Python SDK records assignment, exposure, and outcome events; the event
+   totals, traffic bars, conversion bars, and recent trace update within two
+   seconds. The same path can be driven from a separate process with
+   `PYTHONPATH=src python3 examples/send_live_traffic.py --subjects 20`.
+7. Confirm that Data health appears before the decision fixture. Select
    **Inject missing exposure**. The effect is withheld and the decision action
    becomes unavailable.
-7. Clear the fixture and record a decision. The log contains a frozen evidence
+8. Clear the fixture and record a decision. The log contains a frozen evidence
    payload rather than a link to mutable current state.
 
 ## Operator guarantees demonstrated
@@ -47,6 +54,12 @@ Then open `http://127.0.0.1:8766`.
   reconciliation pipeline with expected invariants shown before results.
 - Missing decision inputs, invalid variables, and an empty valid-state space
   block launch.
+- Combination rules can directly exclude matching states; ordered rules must
+  follow factor declaration order. Contradictory and duplicate definitions
+  block launch with a visible reason.
+- The dashboard and external SDK share the versioned assignment/event API.
+  Assignment, exposure, and outcome events drive live event-derived plots and a
+  pseudonymous recent-event trace.
 - A launch requires explicit review and stores canonical configuration JSON.
 - A launched configuration cannot be edited; changes require cloning.
 - Data health gates effect rendering and decision recommendations.
@@ -69,10 +82,11 @@ evidence snapshots, and lifecycle controls.
 
 ## Rollback
 
-The dashboard is isolated to `src/variantgrid/dashboard.py`,
-`tests/test_dashboard.py`, and `dashboard/`. Removing those paths removes the
-sandbox without changing the registry, assignment, ingestion, or statistical
-modules.
+The live dashboard surface is centered in `src/variantgrid/dashboard.py`; its
+rule schema is serialized by `src/variantgrid/models.py` and
+`src/variantgrid/registry.py`, and assignment event capture is part of
+`src/variantgrid/api.py`. Reverting those changes plus the dashboard/API tests
+removes this increment without changing statistical calculations.
 
 ## Honest limitations
 
@@ -80,14 +94,16 @@ modules.
 - There is no authentication, authorization, CSRF protection, multi-operator
   concurrency control, or durable audit store. A public deployment must remain
   a synthetic portfolio demo and must never receive private or production data.
-- Health and metric values are explicit fixtures; this surface does not prove
-  production ingestion or distributed failure recovery.
+- Live telemetry plots come from actual SDK/API events stored in the local event
+  repository. Data-health injections and the decision-effect panel remain
+  explicit fixtures; neither proves production ingestion or distributed
+  failure recovery.
 - Assignment scale and latency values are generated local benchmark evidence,
   not production traffic measurements or network-service latency.
 - A/A calibration uses seeded synthetic simulations. Event Integrity Lab uses
   deterministic in-memory SQLite fixtures, not sustained Postgres load.
-- The chart is an accessible HTML readout rather than a full visualization
-  system.
+- Live charts poll the local readout endpoint every two seconds; they are not a
+  push stream, warehouse-backed BI system, or production monitoring service.
 - The dashboard demonstrates correct blocking behavior against existing core
   interfaces. Rendering a check does not independently prove the backend
   guarantee behind it.

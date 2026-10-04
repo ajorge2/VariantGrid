@@ -35,14 +35,14 @@
       "observed": {
         "50_50_allocation_drift_percentage_points": 0.0402,
         "maximum_drift_across_policies_percentage_points": 0.0402,
-        "median_trial_sampled_p95_microseconds": 1.333,
+        "median_trial_sampled_p95_microseconds": 1.458,
         "stickiness_percent": 100.0,
         "trial_range_microseconds": [
-          1.333,
-          1.334
+          1.417,
+          1.625
         ]
       },
-      "status": "blocked",
+      "status": "approved",
       "wording": "Preserved 100% repeat-user stickiness across 1M simulated assignments with 0.06 percentage-point allocation drift and 1.46 microsecond sampled p95 local assignment latency."
     },
     "VG-2R": {
@@ -50,7 +50,7 @@
       "observed": {
         "assignments_per_policy": 1000000,
         "maximum_drift_percentage_points": 0.0402,
-        "median_trial_sampled_p95_microseconds": 1.333,
+        "median_trial_sampled_p95_microseconds": 1.458,
         "policies": [
           "50_50",
           "80_20",
@@ -59,7 +59,7 @@
         "trial_count": 5
       },
       "status": "approved",
-      "wording": "Preserved 100% repeat-user stickiness across three 1M-assignment policies with at most 0.0402 percentage-point drift and a 1.333 microsecond median sampled p95 local assignment latency across five trials."
+      "wording": "Preserved 100% repeat-user stickiness across three 1M-assignment policies with at most 0.0402 percentage-point drift and a 1.458 microsecond median sampled p95 local assignment latency across five trials."
     },
     "VG-3": {
       "limitations": "Seeded simulations and local SQLite integrity tests do not establish live causal impact, Postgres behavior, or production reliability.",
@@ -95,7 +95,7 @@
       "wording": "Calibrated a 5.13% false-positive rate and 94.87% interval coverage across 10K A/A simulations; passed five adversarial integrity categories spanning duplicate, missing, late, reordered, and cross-version events."
     }
   },
-  "generated_at": "2026-09-25T17:54:47.650971+00:00",
+  "generated_at": "2026-10-04T01:08:54.335637+00:00",
   "limitations": [
     "No customer adoption, revenue lift, uptime, or live causal impact is claimed.",
     "No exercised Postgres integration is present in this release run.",
@@ -115,11 +115,11 @@
   "release_status": "local_demo_ready",
   "reproduction_command": "PYTHONPATH=src python3 scripts/verify_release.py",
   "source": {
-    "benchmark_generated_at": "2026-09-25T17:54:47.593582+00:00",
+    "benchmark_generated_at": "2026-10-04T01:08:54.262367+00:00",
     "benchmark_methodology_version": "3.0",
     "git_revision": null,
-    "python": "3.13.2",
-    "source_fingerprint_sha256": "acd2b889d6c0e000b638e18373e743e27834d7c367fc5c1837a4d90347577799"
+    "python": "3.14.7",
+    "source_fingerprint_sha256": "789486cbfabb069087067d7b60826a5e85e97873284d56f150a484a74f90baa8"
   },
   "tests": {
     "command": "PYTHONPATH=src python3 -m unittest discover -s tests -v",
@@ -141,6 +141,8 @@
       "test_canonical_ids_ignore_mapping_insertion_order",
       "test_checksum_detects_storage_tampering",
       "test_client_schema_mismatch_is_rejected_and_falls_back_visibly",
+      "test_complete_evidence_returns_no_ship_when_any_frozen_gate_fails",
+      "test_complete_evidence_ships_only_when_every_gate_passes",
       "test_concurrent_duplicate_delivery_across_independent_connections",
       "test_concurrent_duplicates_are_idempotent",
       "test_conditional_variables_reject_forward_or_unknown_dependencies",
@@ -177,6 +179,8 @@
       "test_guardrail_direction_threshold_and_decision_suppression",
       "test_health_is_rendered_before_effect_and_every_chart_is_labeled",
       "test_heavy_tailed_continuous_outcomes_warn_and_block_normal_decision",
+      "test_incomplete_human_review_is_rejected_before_registration",
+      "test_incomplete_or_integrity_failed_evidence_withholds_the_decision",
       "test_ineligibility_and_unknown_rules_fail_closed_with_immutable_defaults",
       "test_integrity_failure_suppresses_recommendation",
       "test_integrity_failures_withhold_effects_and_block_decisions",
@@ -205,21 +209,26 @@
       "test_outcome_before_exposure_time_is_not_attributed",
       "test_pause_stop_and_kill_are_explicit_irreversible_transitions",
       "test_policy_versions_are_assignment_isolated",
+      "test_preregistered_configuration_is_replayable_and_sticky",
       "test_preview_preserves_valid_and_rejected_states_with_reason",
       "test_public_claims_fail_closed_when_release_provenance_disagrees",
       "test_public_proof_surface_uses_only_approved_generated_claims",
       "test_rare_and_common_binary_outcomes_have_finite_uncertainty",
       "test_readouts_do_not_cross_versions",
+      "test_registry_keeps_launched_study_immutable",
       "test_registry_replays_and_freezes_launched_versions",
       "test_reordered_batches_reconcile_to_the_same_digest",
       "test_reordered_row_matches_chronological_reconciliation_digest",
       "test_repeat_assignment_is_fully_sticky",
+      "test_repeated_service_assignment_records_one_idempotent_assignment_event",
       "test_repeated_unadjusted_peeking_warns_and_suppresses_recommendation",
       "test_report_is_ui_ready_serializable_and_scope_limited",
       "test_required_decision_inputs_block_launch",
       "test_retry_after_lost_ack_does_not_double_count",
       "test_retry_after_timeout_recovers_the_committed_batch_result",
+      "test_rule_editor_excludes_combinations_and_blocks_contradictory_sequences",
       "test_scenario_order_and_json_are_deterministic",
+      "test_sdk_events_drive_live_dashboard_readout",
       "test_segment_multiplicity_is_visible",
       "test_service_and_local_evaluator_have_complete_assignment_parity",
       "test_simultaneous_experiments_do_not_contaminate_each_other",
@@ -233,10 +242,12 @@
       "test_unknown_assignment_implementations_fail_before_exposure",
       "test_unknown_sequential_adjustment_cannot_bypass_peeking_gate",
       "test_v1_database_upgrades_rolls_back_and_reapplies_without_losing_json",
+      "test_variantgrid_replays_labels_and_persists_a_no_ship_snapshot",
       "test_version_isolation_does_not_require_the_subject_to_change_state",
       "test_version_salt_policy_and_experiment_namespaces_are_isolated",
       "test_versions_are_isolated",
-      "test_versions_are_validated_and_never_cross_attribution"
+      "test_versions_are_validated_and_never_cross_attribution",
+      "test_viewport_layout_preserves_sticky_navigation_and_mobile_reflow"
     ],
     "postgres_integration_requested": false,
     "postgres_integration_verified": false,
@@ -251,7 +262,7 @@
     ],
     "raw_output": "artifacts/test-results.txt",
     "return_code": 0,
-    "run": 117,
+    "run": 128,
     "successful": true
   },
   "workstreams": {

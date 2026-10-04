@@ -9,8 +9,10 @@ boundary.
 """
 
 from dataclasses import asdict, dataclass, replace
+from collections import Counter
 from datetime import datetime, timezone
 from enum import Enum
+from hashlib import sha256
 from html import escape
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -19,17 +21,28 @@ import argparse
 import json
 from math import isfinite
 from pathlib import Path
+from threading import RLock
 from types import MappingProxyType
 from typing import Any, Mapping
 from urllib.parse import parse_qs, urlparse
 
 from .analysis import evaluate_binary_decision, minimum_detectable_effect, required_sample_size
-from .models import Experiment, Factor, Guardrail, Rule, VariableType
-from .registry import serialize_experiment
+from .api import APIRequest, APIResponse, VariantGridAPI
+from .events import EventStore
+from .models import Experiment, Factor, Guardrail, Rule, VariableType, generate_state_space
+from .registry import (
+    Lifecycle,
+    RegisteredVersion,
+    deserialize_experiment,
+    serialize_experiment,
+)
+from .sdk import InProcessTransport, SDKConfig, VariantGridClient
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 APPROVED_PUBLIC_CLAIMS = ("VG-1", "VG-2R", "VG-3")
+MAX_FACTORS = 100
+MAX_PREVIEW_STATES = 100_000
 
 
 class DashboardLifecycle(str, Enum):
@@ -55,13 +68,24 @@ class ConstraintDefinition:
     when: Mapping[str, Any]
     require: Mapping[str, Any]
     reason: str
+    effect: str = "require"
+    match_order: str = "any_order"
+    sequence: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "when", MappingProxyType(dict(self.when)))
         object.__setattr__(self, "require", MappingProxyType(dict(self.require)))
+        object.__setattr__(self, "sequence", tuple(self.sequence))
 
     def rule(self) -> Rule:
-        return Rule(self.when, self.require)
+        return Rule(
+            self.when,
+            self.require,
+            self.reason,
+            self.effect,
+            self.match_order,
+            self.sequence,
+        )
 
     def accepts(self, values: Mapping[str, Any]) -> bool:
         return self.rule().accepts(values)
@@ -185,11 +209,19 @@ def preview_states(draft: DashboardDraft) -> StatePreview:
     names = [variable.name for variable in draft.variables]
     if len(names) != len(set(names)):
         return StatePreview(())
+    state_count = 1
+    for variable in draft.variables:
+        state_count *= len(variable.values)
+    if state_count > MAX_PREVIEW_STATES:
+        return StatePreview(())
     states: list[PreviewState] = []
-    for combination in product(*(variable.values for variable in draft.variables)):
-        values = dict(zip(names, combination, strict=True))
-        reasons = tuple(rule.reason for rule in draft.constraints if not rule.accepts(values))
-        states.append(PreviewState(values, not reasons, reasons))
+    try:
+        for combination in product(*(variable.values for variable in draft.variables)):
+            values = dict(zip(names, combination, strict=True))
+            reasons = tuple(rule.reason for rule in draft.constraints if not rule.accepts(values))
+            states.append(PreviewState(values, not reasons, reasons))
+    except ValueError:
+        return StatePreview(())
     return StatePreview(tuple(states))
 
 
@@ -222,11 +254,38 @@ def validate_draft(draft: DashboardDraft) -> tuple[str, ...]:
         )
     except ValueError as error:
         errors.append(f"Power inputs are invalid: {error}")
+    if len(draft.variables) > MAX_FACTORS:
+        errors.append(f"Experiments support at most {MAX_FACTORS} factors.")
+    state_count = 1
+    for variable in draft.variables:
+        state_count *= max(1, len(variable.values))
+    if state_count > MAX_PREVIEW_STATES:
+        errors.append(
+            f"The draft expands to {state_count:,} states; the dashboard preview limit is "
+            f"{MAX_PREVIEW_STATES:,}."
+        )
     try:
-        for variable in draft.variables:
-            variable.factor()
+        factors = tuple(variable.factor() for variable in draft.variables)
+        rules = tuple(constraint.rule() for constraint in draft.constraints)
+        canonical_rules = [
+            json.dumps(
+                {
+                    "when": dict(rule.when),
+                    "require": dict(rule.require),
+                    "effect": rule.effect,
+                    "match_order": rule.match_order,
+                    "sequence": list(rule.sequence),
+                },
+                sort_keys=True,
+            )
+            for rule in rules
+        ]
+        if len(canonical_rules) != len(set(canonical_rules)):
+            errors.append("Rule configuration contains duplicate constraints.")
+        if factors and state_count <= MAX_PREVIEW_STATES:
+            generate_state_space(factors, rules)
     except ValueError as error:
-        errors.append(f"Variable definition is invalid: {error}")
+        errors.append(f"Rule configuration is contradictory: {error}")
     preview = preview_states(draft)
     if not preview.states:
         errors.append("The state space is empty or variable names are invalid.")
@@ -268,10 +327,39 @@ def experiment_from_draft(draft: DashboardDraft) -> Experiment:
     )
 
 
+class _SandboxRegistry:
+    """Read-only registry view used by the SDK/API path in the dashboard."""
+
+    def __init__(self, sandbox: "OperatorSandbox") -> None:
+        self.sandbox = sandbox
+
+    def get(self, key: str, version: int) -> RegisteredVersion:
+        with self.sandbox.lock:
+            launched = self.sandbox.versions.get(version)
+            if launched is None:
+                raise KeyError((key, version))
+            experiment = deserialize_experiment(launched.configuration_json)
+            if experiment.key != key:
+                raise KeyError((key, version))
+            lifecycle = {
+                DashboardLifecycle.RUNNING: Lifecycle.RUNNING,
+                DashboardLifecycle.PAUSED: Lifecycle.PAUSED,
+                DashboardLifecycle.STOPPED: Lifecycle.STOPPED,
+                DashboardLifecycle.KILLED: Lifecycle.STOPPED,
+            }[launched.lifecycle]
+            return RegisteredVersion(
+                experiment=experiment,
+                lifecycle=lifecycle,
+                configuration_json=launched.configuration_json,
+                launched_at=launched.launched_at,
+            )
+
+
 class OperatorSandbox:
     """Single-process workflow store used by the local operator demo."""
 
     def __init__(self, draft: DashboardDraft | None = None) -> None:
+        self.lock = RLock()
         self.draft = draft or default_draft()
         self.versions: dict[int, LaunchedVersion] = {}
         self.deployed_version: int | None = None
@@ -280,6 +368,8 @@ class OperatorSandbox:
         self.decisions: list[DecisionSnapshot] = []
         self.messages: list[str] = []
         self.assignment_subject = "demo-user-42"
+        self.event_store = EventStore()
+        self.api = VariantGridAPI(_SandboxRegistry(self), self.event_store)
 
     @property
     def current_version(self) -> LaunchedVersion | None:
@@ -323,6 +413,134 @@ class OperatorSandbox:
         )
         self.messages.append(f"Version {launched.version} launched from an immutable snapshot.")
         return launched
+
+    def api_request(self, request: APIRequest) -> APIResponse:
+        return self.api.handle(request)
+
+    def live_readout(self, *, key: str | None = None, version: int | None = None) -> dict[str, Any]:
+        with self.lock:
+            current = self.current_version
+            if current is None:
+                return {
+                    "status": "waiting_for_launch",
+                    "generated_at": _utc_now(),
+                    "event_totals": {},
+                    "states": [],
+                    "recent_events": [],
+                }
+            experiment = deserialize_experiment(current.configuration_json)
+            requested_key = key or experiment.key
+            requested_version = version or experiment.version
+            if requested_key != experiment.key or requested_version not in self.versions:
+                raise KeyError((requested_key, requested_version))
+            launched = self.versions[requested_version]
+            experiment = deserialize_experiment(launched.configuration_json)
+
+        rows = self.event_store.export_events(experiment.key, experiment.version)
+        totals = Counter(str(row["event_type"]) for row in rows)
+        counts = self.event_store.binary_counts(
+            experiment.key,
+            experiment.version,
+            experiment.primary_metric,
+            attribution_window_hours=experiment.attribution_window_hours,
+        )
+        subjects_with_exposure = {
+            str(row["subject_id"]) for row in rows if row["event_type"] == "exposure"
+        }
+        outcome_subjects = {
+            str(row["subject_id"])
+            for row in rows
+            if row["event_type"] in {"goal", "observation", "guardrail"}
+        }
+        states = []
+        for state in experiment.states:
+            exposed, converted = counts.get(state.key, (0, 0))
+            states.append(
+                {
+                    "state_key": state.key,
+                    "state_id": state.state_id,
+                    "values": dict(state.values),
+                    "assigned": sum(
+                        1
+                        for row in rows
+                        if row["event_type"] == "assignment" and row["variant_key"] == state.key
+                    ),
+                    "exposed": exposed,
+                    "converted": converted,
+                    "conversion_rate": converted / exposed if exposed else None,
+                }
+            )
+        occurred = [str(row["occurred_at"]) for row in rows]
+        recent = []
+        for row in rows[-20:]:
+            recent.append(
+                {
+                    "event_id": row["event_id"],
+                    "event_type": row["event_type"],
+                    "subject_ref": sha256(str(row["subject_id"]).encode("utf-8")).hexdigest()[:10],
+                    "variant_key": row["variant_key"],
+                    "metric": row["metric"],
+                    "value": row["value"],
+                    "occurred_at": row["occurred_at"],
+                }
+            )
+        return {
+            "status": "live" if rows else "waiting_for_events",
+            "experiment_key": experiment.key,
+            "experiment_version": experiment.version,
+            "lifecycle": launched.lifecycle.value,
+            "primary_metric": experiment.primary_metric,
+            "unit": "unique exposed subjects",
+            "time_range": {
+                "start": min(occurred) if occurred else None,
+                "end": max(occurred) if occurred else None,
+            },
+            "generated_at": _utc_now(),
+            "event_totals": {name: totals.get(name, 0) for name in sorted({"assignment", "exposure", "goal", "observation", "guardrail"})},
+            "missing_exposure_subjects": len(outcome_subjects - subjects_with_exposure),
+            "states": states,
+            "recent_events": recent,
+            "reconciliation_digest": self.event_store.reconcile(
+                experiment.key,
+                experiment.version,
+                experiment.primary_metric,
+                attribution_window_hours=experiment.attribution_window_hours,
+            ).digest,
+        }
+
+    def run_reference_product(self, subject_id: str, *, convert: bool = False) -> dict[str, Any]:
+        current = self.current_version
+        if current is None or current.lifecycle is not DashboardLifecycle.RUNNING:
+            raise ValueError("Launch a running experiment before opening the reference product.")
+        experiment = deserialize_experiment(current.configuration_json)
+        client = VariantGridClient(
+            SDKConfig(experiment_versions={experiment.key: experiment.version}),
+            InProcessTransport(self.api),
+        )
+        try:
+            context = client.for_user(experiment.key, subject_id, eligible=True)
+            values = {
+                factor.name: context.get(factor.name, factor.values[0])
+                for factor in experiment.factors
+            }
+            if convert:
+                context.goal(
+                    experiment.primary_metric,
+                    idempotency_key=f"reference-goal:{experiment.key}:{experiment.version}:{subject_id}",
+                )
+            if not client.flush():
+                raise RuntimeError("SDK events did not flush before the bounded timeout.")
+            if client.delivery_failures:
+                raise RuntimeError(str(client.delivery_failures[-1]))
+            return {
+                "subject_id": subject_id,
+                "values": values,
+                "state_key": context.debug_metadata.state_key,
+                "version": experiment.version,
+                "converted": convert,
+            }
+        finally:
+            client.close()
 
     def clone_current(self) -> DashboardDraft:
         if self.current_version is None:
@@ -801,7 +1019,14 @@ def render_dashboard(
     )
     constraints_json = _json_text(
         [
-            {"when": dict(item.when), "require": dict(item.require), "reason": item.reason}
+            {
+                "when": dict(item.when),
+                "require": dict(item.require),
+                "reason": item.reason,
+                "effect": item.effect,
+                "match_order": item.match_order,
+                "sequence": list(item.sequence),
+            }
             for item in draft.constraints
         ]
     )
@@ -886,6 +1111,75 @@ def render_dashboard(
         </figure>
         """
 
+    if launched is None:
+        live_html = (
+            "<div class='live-panel'><h3>Live SDK telemetry</h3>"
+            "<p class='muted'>Launch a version to accept assignment, exposure, and outcome events.</p></div>"
+        )
+        live_script = ""
+    else:
+        live_html = f"""
+        <div class="live-panel" data-live-key="{escape(draft.key)}" data-live-version="{launched.version}">
+          <div class="live-head"><div><span class="eyebrow">Event-derived readout</span><h3>Live SDK telemetry</h3></div>
+          <a class="product-link" href="/reference-product" target="_blank" rel="noopener">Open instrumented product ↗</a></div>
+          <p id="live-status" class="muted" aria-live="polite">Connecting to the event stream…</p>
+          <div id="live-totals" class="telemetry-grid" aria-label="Live event totals"></div>
+          <div class="split"><figure><figcaption><strong>Traffic by state</strong> · unit: unique subjects · version: {launched.version}</figcaption><div id="live-traffic"></div></figure>
+          <figure><figcaption><strong>{escape(draft.primary_metric)}</strong> · unit: conversion rate · version: {launched.version}</figcaption><div id="live-conversion"></div></figure></div>
+          <details class="technical-details"><summary>Recent event trace</summary><div class="event-scroll"><table><thead><tr><th>Time</th><th>Type</th><th>Subject ref</th><th>State / metric</th></tr></thead><tbody id="live-events"></tbody></table></div><p id="live-digest" class="muted"></p></details>
+        </div>
+        """
+        live_script = """
+<script>
+(() => {
+  const panel = document.querySelector('[data-live-key]');
+  if (!panel) return;
+  const status = document.getElementById('live-status');
+  const totals = document.getElementById('live-totals');
+  const traffic = document.getElementById('live-traffic');
+  const conversion = document.getElementById('live-conversion');
+  const events = document.getElementById('live-events');
+  const digest = document.getElementById('live-digest');
+  const row = (label, value, maximum, suffix='') => {
+    const outer = document.createElement('div'); outer.className = 'live-bar-row';
+    const text = document.createElement('span'); text.textContent = `${label} ${value}${suffix}`;
+    const track = document.createElement('b'); const fill = document.createElement('i');
+    fill.style.width = `${maximum ? Math.max(2, value / maximum * 100) : 0}%`;
+    track.appendChild(fill); outer.append(text, track); return outer;
+  };
+  async function refresh() {
+    try {
+      const query = new URLSearchParams({key: panel.dataset.liveKey, version: panel.dataset.liveVersion});
+      const response = await fetch(`/api/live-readout?${query}`, {cache: 'no-store'});
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const data = await response.json();
+      const start = data.time_range.start ? new Date(data.time_range.start).toLocaleTimeString() : 'no events';
+      const end = data.time_range.end ? new Date(data.time_range.end).toLocaleTimeString() : 'now';
+      status.textContent = data.status === 'waiting_for_events'
+        ? 'Connected · waiting for the first SDK event.'
+        : `Live · ${start} to ${end} · ${data.missing_exposure_subjects} outcome subjects missing exposure`;
+      totals.replaceChildren(...Object.entries(data.event_totals).map(([name, count]) => {
+        const card = document.createElement('div'); const value = document.createElement('strong');
+        const label = document.createElement('span'); value.textContent = count; label.textContent = name;
+        card.append(value, label); return card;
+      }));
+      const maxTraffic = Math.max(0, ...data.states.map(item => Math.max(item.assigned, item.exposed)));
+      traffic.replaceChildren(...data.states.map(item => row(item.state_key, item.exposed, maxTraffic, ' exposed')));
+      conversion.replaceChildren(...data.states.map(item => row(item.state_key, Math.round((item.conversion_rate || 0) * 1000) / 10, 100, `% (n=${item.exposed})`)));
+      events.replaceChildren(...data.recent_events.slice().reverse().map(item => {
+        const tr = document.createElement('tr');
+        [item.occurred_at, item.event_type, item.subject_ref, item.variant_key || item.metric || '—'].forEach(value => {
+          const td = document.createElement('td'); td.textContent = value; tr.appendChild(td);
+        }); return tr;
+      }));
+      digest.textContent = `Reconciliation digest ${data.reconciliation_digest}`;
+    } catch (error) { status.textContent = `Live telemetry unavailable: ${error.message}`; }
+  }
+  refresh(); window.setInterval(refresh, 2000);
+})();
+</script>
+"""
+
     lifecycle = launched.lifecycle.value if launched else "not launched"
     health_step_state = (
         ""
@@ -955,7 +1249,10 @@ details.technical-details{{border-top:1px solid var(--line);padding:14px 0;margi
 .workflow-shell{{padding:0;overflow:hidden}} .workflow-head{{padding:28px 28px 18px}} .workflow-step{{border-top:1px solid var(--line);margin:0}} .workflow-step>summary{{display:grid;grid-template-columns:30px 1fr auto;gap:14px;align-items:center;padding:18px 28px;cursor:pointer;list-style:none}} .workflow-step>summary::-webkit-details-marker{{display:none}}
 .step-number{{display:grid;place-items:center;width:28px;height:28px;border:1px solid var(--line);border-radius:8px;color:var(--muted);font-size:12px;font-weight:800}} .step-title strong,.step-title small{{display:block}} .step-body{{padding:0 28px 26px}} .step-state{{font-size:12px;color:var(--muted)}}
 .actions form{{display:flex;flex-wrap:wrap;gap:8px}} footer{{padding:12px 2px}} pre{{max-width:100%;overflow:auto}}
-@media(max-width:720px){{.shell-header{{padding:24px 14px 0}} .nav-shell{{padding:0 14px}} main{{padding:0 14px 48px}} h1{{font-size:34px;margin-top:34px}} .section-nav{{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}} .section-nav a{{text-align:center}} section{{padding:21px;scroll-margin-top:118px}} .section-heading,.section-intro,.grid,.split{{display:block}} .section-heading p,.section-intro p{{margin-top:8px}} .inline-form,.assignment-result,.integrity-summary{{display:block}} .inline-form button{{margin-top:10px;width:100%}} .assignment-result dl{{margin-top:14px}} .result-item>summary{{grid-template-columns:1fr auto}} .workflow-step>summary{{padding:16px 20px;grid-template-columns:30px 1fr}} .step-state{{display:none}} .step-body{{padding:0 20px 22px}} table{{display:block;overflow-x:auto}}}}
+.live-panel{{border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:22px;overflow:hidden}} .live-head{{display:flex;align-items:start;justify-content:space-between;gap:18px}} .live-head>*,.split>*{{min-width:0}} .live-head h3{{margin:3px 0 0}} .product-link{{color:var(--accent);font-weight:750;text-align:right;overflow-wrap:anywhere}} .live-panel figcaption{{overflow-wrap:anywhere}}
+.telemetry-grid{{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin:14px 0 20px}} .telemetry-grid div{{background:var(--subtle);border-radius:10px;padding:10px}} .telemetry-grid strong,.telemetry-grid span{{display:block}} .telemetry-grid strong{{font-size:20px}} .telemetry-grid span{{color:var(--muted);font-size:12px;text-transform:capitalize}}
+.live-bar-row{{margin:10px 0}} .live-bar-row span{{display:block;font-size:12px;overflow-wrap:anywhere}} .live-bar-row b{{display:block;height:9px;background:#eef0f2;border-radius:99px;margin-top:4px;overflow:hidden}} .live-bar-row i{{display:block;height:100%;background:var(--accent);border-radius:99px}} .event-scroll{{max-height:260px;overflow:auto}}
+@media(max-width:720px){{.shell-header{{padding:24px 14px 0}} .nav-shell{{padding:0 14px}} main{{padding:0 14px 48px}} h1{{font-size:34px;margin-top:34px}} .section-nav{{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}} .section-nav a{{text-align:center}} section{{padding:21px;scroll-margin-top:118px}} .section-heading,.section-intro,.grid,.split{{display:block}} .section-heading p,.section-intro p{{margin-top:8px}} .inline-form,.assignment-result,.integrity-summary,.live-head{{display:block}} .telemetry-grid{{grid-template-columns:repeat(2,minmax(0,1fr))}} .inline-form button{{margin-top:10px;width:100%}} .assignment-result dl{{margin-top:14px}} .result-item>summary{{grid-template-columns:1fr auto}} .workflow-step>summary{{padding:16px 20px;grid-template-columns:30px 1fr}} .step-state{{display:none}} .step-body{{padding:0 20px 22px}} table{{display:block;overflow-x:auto}}}}
 </style>
 </head>
 <body><header class="shell-header">
@@ -986,7 +1283,8 @@ details.technical-details{{border-top:1px solid var(--line);padding:14px 0;margi
   <div><label>Baseline rate<input name="baseline_rate" type="number" step="0.01" value="{draft.baseline_rate}"></label>
   <label>Target absolute effect<input name="target_effect" type="number" step="0.01" value="{draft.target_absolute_effect}"></label></div></div>
   <label>Typed variables (JSON)<textarea name="variables">{escape(variables_json)}</textarea></label>
-  <label>Constraints and rejection reasons (JSON)<textarea name="constraints">{escape(constraints_json)}</textarea></label>
+  <label>Combination and sequence rules (JSON)<textarea name="constraints">{escape(constraints_json)}</textarea></label>
+  <p class="muted">Use <code>effect: "exclude"</code> to remove a matching combination. Use <code>match_order: "in_order"</code> to validate the predicates as a sequence in declared factor order. Contradictory references or orderings block launch.</p>
 </details>
 <button type="submit">Validate</button>
 </form>
@@ -1014,7 +1312,7 @@ details.technical-details{{border-top:1px solid var(--line);padding:14px 0;margi
 <button class="secondary" name="failure" value="version_disagreement">Inject version mismatch</button><button class="secondary" name="failure" value="stale_configuration">Inject stale config</button>
 <button class="secondary" name="failure" value="underpowered">Inject underpowered readout</button></form></div></div></details>
 
-<details id="readout" class="workflow-step"><summary><span class="step-number">6</span><span class="step-title"><strong>Results</strong></span>{step_state(readout_step_state)}</summary><div class="step-body">{effects_html}</div></details>
+<details id="readout" class="workflow-step"><summary><span class="step-number">6</span><span class="step-title"><strong>Results</strong></span>{step_state(readout_step_state)}</summary><div class="step-body">{live_html}<details class="technical-details"><summary>Decision fixture</summary>{effects_html}</details></div></details>
 
 <details id="decision" class="workflow-step"><summary><span class="step-number">7</span><span class="step-title"><strong>Decision log</strong></span>{step_state(decision_step_state)}</summary><div class="step-body"><form method="post" action="/decision">
 <label>Operator decision<select name="decision"><option>ship</option><option>iterate</option><option>stop</option><option>rollback</option></select></label>
@@ -1026,8 +1324,8 @@ details.technical-details{{border-top:1px solid var(--line);padding:14px 0;margi
 <table><thead><tr><th>Version</th><th>Lifecycle</th><th>Launched</th><th>Immutable configuration</th></tr></thead><tbody>{version_rows}</tbody></table></div></details>
 </section>
 
-<footer><p class="muted">Results shown here come from local simulations and tests.</p></footer>
-</main></body></html>"""
+<footer><p class="muted">Validation evidence comes from local simulations and tests; live telemetry reflects events ingested by this running sandbox.</p></footer>
+</main>{live_script}</body></html>"""
     return html
 
 
@@ -1046,7 +1344,14 @@ def draft_from_form(form: Mapping[str, list[str]], current: DashboardDraft) -> D
         for item in variables_raw
     )
     constraints = tuple(
-        ConstraintDefinition(item["when"], item["require"], str(item.get("reason", "Constraint rejected state.")))
+        ConstraintDefinition(
+            item["when"],
+            item.get("require", {}),
+            str(item.get("reason", "Constraint rejected state.")),
+            str(item.get("effect", "require")),
+            str(item.get("match_order", "any_order")),
+            tuple(item.get("sequence", tuple(item.get("when", {})))),
+        )
         for item in constraints_raw
     )
     threshold_text = form.get("guardrail_threshold", [""])[0].strip()
@@ -1069,8 +1374,55 @@ def draft_from_form(form: Mapping[str, list[str]], current: DashboardDraft) -> D
     )
 
 
+def render_reference_product(
+    sandbox: OperatorSandbox, result: Mapping[str, Any] | None = None, error: str | None = None
+) -> str:
+    current = sandbox.current_version
+    experiment_name = sandbox.draft.key if current is None else deserialize_experiment(current.configuration_json).key
+    result_html = ""
+    if error:
+        result_html = f"<div class='error' role='alert'><strong>Request blocked:</strong> {escape(error)}</div>"
+    elif result:
+        values = "".join(
+            f"<li><strong>{escape(str(name))}:</strong> {escape(str(value))}</li>"
+            for name, value in result["values"].items()
+        )
+        result_html = (
+            "<div class='result'><span>SDK assignment</span>"
+            f"<h2>{escape(str(result['state_key']))}</h2><ul>{values}</ul>"
+            f"<p>Experiment v{int(result['version'])} · "
+            f"{'outcome recorded' if result['converted'] else 'exposure recorded'}</p></div>"
+        )
+    return f"""<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VariantGrid instrumented product</title><style>
+:root{{--ink:#191d23;--muted:#667085;--accent:#3157d5;--line:#dfe3e8}}*{{box-sizing:border-box}}body{{margin:0;background:#f5f6f8;color:var(--ink);font:15px/1.5 Inter,system-ui,sans-serif}}main{{max-width:700px;margin:8vh auto;padding:36px;background:white;border:1px solid var(--line);border-radius:18px}}h1{{font-size:36px;line-height:1.05;margin:8px 0}}.eyebrow{{color:var(--accent);font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em}}label{{display:block;font-weight:700;margin:24px 0 7px}}input{{width:100%;padding:12px;border:1px solid #cfd4d8;border-radius:9px;font:inherit}}button{{padding:11px 15px;border:0;border-radius:9px;background:var(--ink);color:white;font-weight:750;margin:12px 8px 0 0;cursor:pointer}}button.secondary{{background:#eef0f2;color:var(--ink)}}.result,.error{{margin-top:26px;padding:18px;border-radius:12px;background:#f0f4ff}}.error{{background:#fff1ef;color:#8a1c13}}.result h2{{margin:4px 0}}.result span,.result p,.muted{{color:var(--muted)}}a{{color:var(--accent);font-weight:700}}</style></head>
+<body><main><span class="eyebrow">Deployed-product integration</span><h1>Instrumented onboarding</h1>
+<p class="muted">This reference surface calls the Python SDK against the same API contract a deployed product uses. Assignment, exposure, and outcome events appear in the dashboard within two seconds.</p>
+<form method="post" action="/reference-product"><label>User ID<input name="subject_id" value="reference-user-1" required maxlength="512"></label>
+<button name="action" value="view">Load experience</button><button class="secondary" name="action" value="convert">Complete {escape(sandbox.draft.primary_metric)}</button></form>
+{result_html}<p><a href="/">← View live dashboard</a></p><p class="muted">Active experiment: {escape(experiment_name)}</p></main></body></html>"""
+
+
 class DashboardHandler(BaseHTTPRequestHandler):
     sandbox: OperatorSandbox
+
+    def _send_json(self, status: int, body: Mapping[str, Any]) -> None:
+        payload = json.dumps(body, separators=(",", ":")).encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(payload)))
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        self.wfile.write(payload)
+
+    def _send_html(self, status: int, html: str) -> None:
+        payload = html.encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(payload)))
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        self.wfile.write(payload)
 
     def _redirect(self) -> None:
         self.send_response(HTTPStatus.SEE_OTHER)
@@ -1078,7 +1430,8 @@ class DashboardHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self) -> None:  # noqa: N802 - required by BaseHTTPRequestHandler
-        path = urlparse(self.path).path
+        parsed = urlparse(self.path)
+        path = parsed.path
         if path == "/healthz":
             payload = b'{"status":"ok"}'
             self.send_response(HTTPStatus.OK)
@@ -1087,6 +1440,28 @@ class DashboardHandler(BaseHTTPRequestHandler):
             self.send_header("Cache-Control", "no-store")
             self.end_headers()
             self.wfile.write(payload)
+            return
+        if path == "/v1/health":
+            response = self.sandbox.api_request(
+                APIRequest("GET", path, headers=dict(self.headers.items()))
+            )
+            self._send_json(response.status, response.body)
+            return
+        if path == "/api/live-readout":
+            query = parse_qs(parsed.query)
+            try:
+                version_text = query.get("version", [""])[0]
+                readout = self.sandbox.live_readout(
+                    key=query.get("key", [None])[0],
+                    version=int(version_text) if version_text else None,
+                )
+            except (KeyError, TypeError, ValueError) as error:
+                self._send_json(HTTPStatus.BAD_REQUEST, {"error": str(error)})
+            else:
+                self._send_json(HTTPStatus.OK, readout)
+            return
+        if path == "/reference-product":
+            self._send_html(HTTPStatus.OK, render_reference_product(self.sandbox))
             return
         if path != "/":
             self.send_error(HTTPStatus.NOT_FOUND)
@@ -1101,8 +1476,49 @@ class DashboardHandler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:  # noqa: N802 - required by BaseHTTPRequestHandler
         length = int(self.headers.get("Content-Length", "0"))
-        form = parse_qs(self.rfile.read(length).decode("utf-8"), keep_blank_values=True)
+        if length > 1_000_000:
+            self.send_error(HTTPStatus.REQUEST_ENTITY_TOO_LARGE)
+            return
+        raw_body = self.rfile.read(length)
         path = urlparse(self.path).path
+        if path in {"/v1/assign", "/v1/events/batch"}:
+            try:
+                body = json.loads(raw_body.decode("utf-8")) if raw_body else {}
+                if not isinstance(body, Mapping):
+                    raise ValueError("request body must be a JSON object")
+            except (UnicodeDecodeError, json.JSONDecodeError, ValueError) as error:
+                self._send_json(
+                    HTTPStatus.BAD_REQUEST,
+                    {"schema_version": "1", "error": {"code": "invalid_json", "message": str(error)}},
+                )
+                return
+            response = self.sandbox.api_request(
+                APIRequest("POST", path, body, dict(self.headers.items()))
+            )
+            self._send_json(response.status, response.body)
+            return
+        form = parse_qs(raw_body.decode("utf-8"), keep_blank_values=True)
+        if path == "/reference-product":
+            subject_id = form.get("subject_id", [""])[0].strip()
+            try:
+                if not subject_id:
+                    raise ValueError("User ID is required.")
+                if len(subject_id) > 512:
+                    raise ValueError("User ID exceeds 512 characters.")
+                result = self.sandbox.run_reference_product(
+                    subject_id, convert=form.get("action", ["view"])[0] == "convert"
+                )
+            except (KeyError, RuntimeError, TypeError, ValueError) as error:
+                self._send_html(
+                    HTTPStatus.BAD_REQUEST,
+                    render_reference_product(self.sandbox, error=str(error)),
+                )
+            else:
+                self._send_html(
+                    HTTPStatus.OK,
+                    render_reference_product(self.sandbox, result=result),
+                )
+            return
         try:
             if path == "/assignment-lab":
                 subject_id = form.get("subject_id", [""])[0].strip()

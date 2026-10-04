@@ -8,9 +8,17 @@ Status values: `historical`, `reproduced`, `blocked`, or `approved`.
 | VG-2 | 100% repeat-user stickiness across 1M assignments, 0.06 percentage-point allocation drift, and 1.46 microsecond sampled p95 local assignment latency. | Assignment engineer | Evidence/release engineer | blocked |
 | VG-2R | 100% repeat-user stickiness across three 1M-assignment policies, at most 0.0402 percentage-point drift, and 1.333 microsecond median sampled p95 local latency across five trials. | Assignment engineer | Evidence/release engineer | approved |
 | VG-3 | 5.13% false-positive rate and 94.87% interval coverage across 10K A/A simulations, plus five adversarial integrity categories. | Inference integrity engineer, with ingestion sign-off | Evidence/release engineer | approved |
+| VG-4 | VariantGrid replayed CodeArchitect's completed human-review evidence and recorded no-ship lowering its acceptance threshold from 0.72 to 0.62 after coverage cleared 20% but strict precision fell to 68.6%, below the 80% floor. | Offline policy evaluation | Not yet independently signed | reproduced |
 
 ## Baseline note
 
 The copied historical artifacts report all three numbers in VG-2. The clean-copy release run reproduced 100% stickiness and at most 0.0402 percentage-point drift across three allocation policies, and measured a 1.333-microsecond median sampled p95 with a 1.333–1.334 range. The exact historical wording remains blocked because the generated evidence now supports a different measured value; use VG-2R or say "about 1.3 microseconds median sampled p95."
 
 VG-1, VG-2R, and VG-3 were independently regenerated from a clean checkout-like staged copy. Their approval applies to the local implementation and stated simulation/test scope, not production durability, adoption, uptime, revenue, or causal business lift.
+
+VG-4 is reproduced by `studies/codearchitect-threshold-evaluation/run_evaluation.py`
+from the completed sibling CodeArchitect evidence bundle. The generated snapshot
+hashes every source input and preserves the VariantGrid registry decision. It is a
+paired offline policy evaluation, not a randomized experiment or evidence of
+developer outcomes, and it has not received the independent release sign-off used
+for VG-1 through VG-3.
