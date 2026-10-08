@@ -179,9 +179,9 @@ class DashboardWorkflowTests(unittest.TestCase):
         page = self.render(OperatorSandbox())
 
         self.assertIn('</header><div class="nav-shell"><nav class="section-nav"', page)
-        self.assertIn(".nav-shell{padding:0 24px;position:sticky;top:12px", page)
-        self.assertIn("section{background:var(--surface);", page)
-        self.assertIn("scroll-margin-top:78px", page)
+        self.assertIn(".nav-shell{padding:0 24px;position:sticky;top:0", page)
+        self.assertIn("section{border-top:1px solid var(--ink);", page)
+        self.assertIn("scroll-margin-top:66px", page)
         self.assertIn("grid-template-columns:repeat(2,minmax(0,1fr))", page)
         self.assertIn("overflow-wrap:anywhere", page)
 
