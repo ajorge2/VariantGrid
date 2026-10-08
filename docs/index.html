@@ -158,7 +158,7 @@
 
   <section id="interactive-system">
     <h2>Inspect the running system</h2>
-    <p class="section-intro">The embedded sandbox is the product demonstration and the first layer of the analysis. Use it to inspect the system snapshot, repeat an assignment, open the adversarial safety cases, or move through the experiment workflow.</p>
+    <p class="section-intro">The embedded sandbox exposes the system snapshot, deterministic assignment path, adversarial event cases, and experiment workflow.</p>
     <iframe class="system-frame" title="Interactive VariantGrid experiment dashboard" src="https://site--variantgrid--764vq9x779wv.code.run/" loading="lazy"></iframe>
     <p class="frame-note">Prefer a full-screen workspace? <a href="https://site--variantgrid--764vq9x779wv.code.run/">Open the embedded system directly</a>.</p>
   </section>
@@ -176,13 +176,13 @@
   </section>
 
   <section>
-    <h2>What the evidence supports</h2>
+    <h2>Measured results</h2>
     <table>
-      <thead><tr><th>Evidence</th><th>Observed</th><th>Scope</th><th>Status</th></tr></thead>
+      <thead><tr><th>Result</th><th>Observed</th><th>Scope</th></tr></thead>
       <tbody>
-        <tr><td>Assignment reliability</td><td>≤0.0402 percentage-point drift; 1.458 μs median sampled p95</td><td>Local in-process Python benchmark; hardware-sensitive</td><td class="ok">Approved</td></tr>
-        <tr><td>Inference calibration</td><td>5.13% false positives; 94.87% interval coverage</td><td>Fixed-seed A/A simulations</td><td class="ok">Approved</td></tr>
-        <tr><td>Adversarial event integrity</td><td>Duplicate, missing, late, reordered, and cross-version cases passed</td><td>Local SQLite semantics, not distributed durability</td><td class="ok">Approved</td></tr>
+        <tr><td>Assignment reliability</td><td>≤0.0402 percentage-point drift; 1.458 μs median sampled p95</td><td>Local in-process Python benchmark; hardware-sensitive</td></tr>
+        <tr><td>Inference calibration</td><td>5.13% false positives; 94.87% interval coverage</td><td>Fixed-seed A/A simulations</td></tr>
+        <tr><td>Adversarial event integrity</td><td>Duplicate, missing, late, reordered, and cross-version cases passed</td><td>Local SQLite semantics, not distributed durability</td></tr>
       </tbody>
     </table>
   </section>
@@ -190,18 +190,18 @@
   <section>
     <h2>Reproduce or inspect</h2>
     <div class="links">
-      <a class="link" href="https://github.com/ajorge2/VariantGrid/blob/main/CLAIMS.md">Claim registry <span>Approved wording, exact evidence, and limitations for every protected claim.</span></a>
-      <a class="link" href="https://github.com/ajorge2/VariantGrid/blob/main/artifacts/release_audit.json">Release audit <span>Machine-readable claim status emitted by the verifier.</span></a>
       <a class="link" href="https://github.com/ajorge2/VariantGrid/blob/main/benchmarks/results.json">Raw benchmark results <span>Policies, trials, stickiness, drift, and latency measurements.</span></a>
-      <a class="link" href="https://github.com/ajorge2/VariantGrid/blob/main/docs/EVIDENCE.md">Evidence map <span>Capabilities mapped to owners, tests, artifacts, and limitations.</span></a>
+      <a class="link" href="https://github.com/ajorge2/VariantGrid/blob/main/docs/ASSIGNMENT.md">Assignment method <span>Hashing contract, weighted allocation, version isolation, and parity checks.</span></a>
+      <a class="link" href="https://github.com/ajorge2/VariantGrid/blob/main/docs/inference-integrity.md">Inference method <span>Estimands, intervals, sequential correction, guardrails, and assumptions.</span></a>
+      <a class="link" href="https://github.com/ajorge2/VariantGrid/blob/main/EVENT_INGESTION.md">Event handling <span>Exposure semantics, retries, ordering, version isolation, and reconciliation.</span></a>
     </div>
   </section>
 
   <section>
-    <h2>Verification boundary</h2>
+    <h2>Scope and reproduction</h2>
     <div class="scope">
       <p><code>PYTHONPATH=src python3 scripts/verify_release.py</code></p>
-      <p>This command stages a clean copy, runs the test and benchmark suites, applies the predeclared claim gates, and emits the release audit. The evidence establishes deterministic local assignment, calibrated seeded simulation, adversarial SQLite event handling, and a reproducible operator workflow. It does not establish distributed durability, production uptime, customer adoption, or causal business impact.</p>
+      <p>This command stages a clean copy and runs the test, benchmark, and adversarial-integrity suites. The resulting artifacts establish deterministic local assignment, calibrated seeded simulation, adversarial SQLite event handling, and a reproducible operator workflow. They do not establish distributed durability, production uptime, customer adoption, or causal business impact.</p>
     </div>
   </section>
 </main>

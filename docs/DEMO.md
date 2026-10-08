@@ -14,7 +14,7 @@ Open `http://127.0.0.1:8766`.
 
 In **Assignment Lab**, change the subject ID and select **Assign twice and compare versions**. Point out the identical repeated result, SHA-256 bucket and interval, experiment and policy versions, and the separate comparison-version namespace. A version can legitimately land in the same state; isolation means the version changed the deterministic hash namespace.
 
-Then scan the generated 50/50, 80/20, and 90/10 rows: each contains one million assignments, 100% repeat-user stickiness, observed drift, and the five-trial local latency summary. These values are loaded from approved machine-readable artifacts; opening the page does not rerun the benchmark.
+Then scan the generated 50/50, 80/20, and 90/10 rows: each contains one million assignments, 100% repeat-user stickiness, observed drift, and the five-trial local latency summary. These values are loaded from generated machine-readable artifacts; opening the page does not rerun the benchmark.
 
 ## 0:30–0:55 — Run the five integrity scenarios
 
@@ -24,7 +24,7 @@ What this proves locally: the named adversarial semantics hold for deterministic
 
 ## 0:55–1:15 — Trace every published number
 
-In **Validation Evidence**, connect the three resume bullets to approved VG-1, VG-2R, and VG-3 manifests. Expand provenance to show the reproduction command, source fingerprint, environment, artifacts, methodology, and limitations. Note that the historical VG-2 wording is blocked and therefore not displayed as evidence.
+In **Validation Evidence**, connect the three published results to the VG-1, VG-2R, and VG-3 result manifests. Expand provenance to show the reproduction command, source fingerprint, environment, artifacts, methodology, and limitations. The earlier VG-2 result is superseded by VG-2R and is not displayed.
 
 ## 1:15–1:40 — Configure and freeze the experiment contract
 

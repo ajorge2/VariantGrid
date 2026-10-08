@@ -17,7 +17,7 @@ flowchart LR
     X --> S
     S -->|health before effect| O
     O -->|immutable evidence snapshot| R
-    T[Tests + benchmark] -->|regression gates| P[Release audit + claim manifests]
+    T[Tests + benchmark] -->|regression checks| P[Versioned result artifacts]
     R --> T
     A --> T
     E --> T
@@ -32,7 +32,7 @@ flowchart LR
 4. **Ingestion:** stable event and batch identifiers make retry effects idempotent. Event and receipt time remain distinct. Invalid or conflicting payloads are visible as dead letters.
 5. **Attribution:** reconciliation orders by event time and admits only outcomes causally after a same-version exposure and inside the declared window.
 6. **Decision:** SRM, sample size, guardrail, heavy-tail, stale-configuration, version, and sequential-monitoring failures suppress a recommendation before effect interpretation.
-7. **Evidence:** a clean-copy verifier reruns tests and benchmarks, applies thresholds, and creates machine-readable claim manifests.
+7. **Reproduction:** a clean-copy runner reruns tests and benchmarks, applies the declared thresholds, and writes machine-readable result artifacts.
 
 ## Runtime variants
 
