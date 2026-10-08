@@ -1,6 +1,6 @@
 # VariantGrid
 
-**[Live evidence dashboard](https://site--variantgrid--764vq9x779wv.code.run/)** · **[Verification overview](https://ajorge2.github.io/VariantGrid/)**
+**[Comprehensive analysis and interactive system](https://ajorge2.github.io/VariantGrid/)**
 
 VariantGrid is a local, evidence-first experimentation platform for moving from a product hypothesis to an auditable decision. It is built around the failure modes that make experiment readouts unreliable: unstable assignment, invalid multivariate combinations, duplicate events, missing exposure, reordered delivery, sample-ratio mismatch, unsafe peeking, and experiment-version leakage.
 
